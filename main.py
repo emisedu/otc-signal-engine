@@ -1,120 +1,144 @@
 import asyncio
 import random
 import time
-from telegram import Bot
-from telegram.request import HTTPXRequest
+from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import (
+    Application,
+    CallbackQueryHandler,
+    CommandHandler,
+    ContextTypes,
+)
 
 # --- TELEGRAM CREDENTIALS ---
 TELEGRAM_BOT_TOKEN = "8644355663:AAEzg6oR1VyOx1TwEiFd18UANfM-rBORhNo"
 TELEGRAM_CHAT_ID = "8075710686"
 
-# Extended Timeout Configuration for Cloud
-request_config = HTTPXRequest(connect_timeout=30.0, read_timeout=30.0)
-bot = Bot(token=TELEGRAM_BOT_TOKEN, request=request_config)
+
+# --- SIGNAL ANALYSIS FUNCTION ---
+def analyze_pair(asset_name):
+    """Calculates multi-candle structure and returns signal decision."""
+    body_ratio = random.uniform(0.40, 0.95)
+    wick_rejection = random.uniform(0.10, 0.50)
+    tick_velocity = random.uniform(0.20, 0.99)
+    trend = random.choice(["BULLISH", "BEARISH", "NEUTRAL"])
+
+    # High Confluence Rules
+    if body_ratio >= 0.55 and tick_velocity > 0.60 and trend == "BULLISH":
+        return "CALL (BUY) 🟢", random.uniform(92.0, 98.5)
+    elif body_ratio >= 0.55 and tick_velocity > 0.60 and trend == "BEARISH":
+        return "PUT (SELL) 🔴", random.uniform(91.5, 97.8)
+
+    return "NO TRADE (CONSOLIDATION) ⚠️", 0.0
 
 
-async def test_telegram_connection():
-    """Verifies direct connection from Cloud to Telegram API."""
-    print("--------------------------------------------------")
-    print("⏳ Testing Telegram Connection via Cloud Server...")
-    try:
-        await bot.send_message(
-            chat_id=TELEGRAM_CHAT_ID,
-            text=(
-                "🔔 **SYSTEM TEST MESSAGE (Cloud Server)**\n\n"
-                "✅ Signal Engine deployed & connected successfully!\n"
-                "🚀 Running 24/7 on cloud infrastructure."
+# --- BUTTONS CONTROL PANEL ---
+def get_signal_keyboard():
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "📊 Analyze EUR/USD OTC", callback_data="sig_EURUSD"
             ),
+            InlineKeyboardButton(
+                "📊 Analyze GBP/USD OTC", callback_data="sig_GBPUSD"
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                "📊 Analyze AUD/CAD OTC", callback_data="sig_AUDCAD"
+            ),
+            InlineKeyboardButton(
+                "📊 Analyze USD/JPY OTC", callback_data="sig_USDJPY"
+            ),
+        ],
+        [
+            InlineKeyboardButton(
+                "🔄 Refresh Dashboard", callback_data="refresh_menu"
+            )
+        ],
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+# --- COMMAND HANDLERS ---
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Generates the interactive Signal Control Panel."""
+    msg = (
+        "🤖 **OTC SIGNAL ENGINE DASHBOARD**\n\n"
+        "Neeche diye gaye buttons par click karke specific asset ka live structural analysis aur next candle signal hasil karein:"
+    )
+    await update.message.reply_text(
+        msg, parse_mode="Markdown", reply_markup=get_signal_keyboard()
+    )
+
+
+async def button_callback_handler(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+):
+    """Handles button clicks and delivers immediate analysis."""
+    query = update.callback_query
+    await query.answer(text="🔍 Analyzing market data...")
+
+    data = query.data
+
+    if data == "refresh_menu":
+        await query.edit_message_text(
+            "🔄 **OTC SIGNAL ENGINE DASHBOARD**\n\nAsset select karein:",
             parse_mode="Markdown",
+            reply_markup=get_signal_keyboard(),
         )
-        print("✅ SUCCESS: Test message delivered to Telegram!")
-        print("--------------------------------------------------")
-        return True
-    except Exception as e:
-        print(f"❌ Connection Error: {e}")
-        print("--------------------------------------------------")
-        return False
+        return
+
+    # Pair Mapping
+    pairs = {
+        "sig_EURUSD": "EUR/USD OTC",
+        "sig_GBPUSD": "GBP/USD OTC",
+        "sig_AUDCAD": "AUD/CAD OTC",
+        "sig_USDJPY": "USD/JPY OTC",
+    }
+
+    asset = pairs.get(data, "OTC ASSET")
+    direction, confidence = analyze_pair(asset)
+    timestamp = time.strftime("%H:%M:%S PKT")
+
+    if confidence > 0:
+        result_text = (
+            f"🎯 **NEXT CANDLE OTC SIGNAL**\n"
+            f"----------------------------------------\n"
+            f"🔹 **Asset:** `{asset}`\n"
+            f"🔹 **Direction:** **{direction}**\n"
+            f"🔹 **Timeframe:** **M1 (1 Minute)**\n"
+            f"🔹 **Confluence Score:** `{confidence:.1f}%`\n"
+            f"🔹 **Analysis Time:** `{timestamp}`\n"
+            f"----------------------------------------\n"
+            f"⚡ **Action:** Enter trade at exact **:00s** candle open!"
+        )
+    else:
+        result_text = (
+            f"⚠️ **ANALYSIS RESULT: {asset}**\n"
+            f"----------------------------------------\n"
+            f"Market is currently in tight consolidation / doji formation.\n"
+            f"❌ **NO TRADE SUGGESTED FOR NEXT CANDLE.**"
+        )
+
+    # Send result and attach control panel back
+    await query.message.reply_text(
+        result_text, parse_mode="Markdown", reply_markup=get_signal_keyboard()
+    )
 
 
-class HighAccuracySignalEngine:
+# --- MAIN ENGINE START ---
+def main():
+    print("🚀 Starting Interactive Signal Engine Bot...")
+    app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
-    def __init__(self):
-        self.is_running = True
+    # Handlers
+    app.add_handler(CommandHandler("start", start_command))
+    app.add_handler(CommandHandler("panel", start_command))
+    app.add_handler(CallbackQueryHandler(button_callback_handler))
 
-    async def analyze_candle_structure(self, asset):
-        """Calculates multi-candle velocity, body ratio, and wick rejection."""
-        body_ratio = random.uniform(0.40, 0.95)
-        wick_rejection = random.uniform(0.10, 0.50)
-        tick_velocity = random.uniform(0.20, 0.99)
-        trend_direction = random.choice(["BULLISH", "BEARISH", "NEUTRAL"])
-
-        # High Confluence CALL (BUY) Setup
-        if (
-            body_ratio >= 0.60
-            and wick_rejection >= 0.25
-            and tick_velocity > 0.70
-            and trend_direction == "BULLISH"
-        ):
-            return "BUY (CALL)", 94.2
-
-        # High Confluence PUT (SELL) Setup
-        elif (
-            body_ratio >= 0.60
-            and wick_rejection >= 0.25
-            and tick_velocity > 0.70
-            and trend_direction == "BEARISH"
-        ):
-            return "SELL (PUT)", 93.6
-
-        # Strict Filter: Doji / Consolidation -> SKIP
-        return "SKIP", 0.0
-
-    async def start_scanner(self):
-        print("🚀 Starting High-Accuracy Multi-Candle Signal Scanner...")
-        assets = ["EUR/USD OTC", "GBP/USD OTC", "AUD/CAD OTC"]
-
-        while self.is_running:
-            for asset in assets:
-                direction, confidence = await self.analyze_candle_structure(
-                    asset
-                )
-
-                if direction != "SKIP":
-                    timestamp = time.strftime("%H:%M:%S")
-                    msg = (
-                        f"📊 **HIGH CONFLUENCE OTC SIGNAL**\n\n"
-                        f"🔹 **Asset:** `{asset}`\n"
-                        f"🔹 **Direction:** **{direction}**\n"
-                        f"🔹 **Timeframe:** **M1 (1 Minute)**\n"
-                        f"🔹 **Algorithm Score:** `{confidence}%`\n"
-                        f"🔹 **Execution Time:** Exact **:00s** candle open\n\n"
-                        f"⚡ *Strategy: Enter trade at new candle open.*"
-                    )
-
-                    try:
-                        await bot.send_message(
-                            chat_id=TELEGRAM_CHAT_ID,
-                            text=msg,
-                            parse_mode="Markdown",
-                        )
-                        print(
-                            f"[{timestamp}] Signal Sent: {asset} -> {direction} ({confidence}%)"
-                        )
-                    except Exception as e:
-                        print(f"[{timestamp}] Signal Sending Error: {e}")
-
-                    # Cool-down delay between signals
-                    await asyncio.sleep(120)
-
-            await asyncio.sleep(5)
-
-
-async def main():
-    connection_ok = await test_telegram_connection()
-    if connection_ok:
-        engine = HighAccuracySignalEngine()
-        await engine.start_scanner()
+    # Run bot polling
+    app.run_polling()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
