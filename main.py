@@ -16,14 +16,11 @@ class MultiTimeframeEngine:
 
     @staticmethod
     def analyze_multi_tf(asset_name):
-        """Analyzes micro-structures across 5s, 10s, 15s, 30s, and 1m timeframes."""
         timeframes = ["5s", "10s", "15s", "30s", "1m"]
         tf_results = {}
-
         bullish_count = 0
         bearish_count = 0
 
-        # Simulate micro-structure candle reading across timeframes
         for tf in timeframes:
             bias = random.choice(["BULLISH", "BEARISH"])
             tf_results[tf] = bias
@@ -32,7 +29,6 @@ class MultiTimeframeEngine:
             else:
                 bearish_count += 1
 
-        # Strict Multi-Timeframe Confluence Filter (Requires minimum 4/5 alignment)
         if bullish_count >= 4:
             confidence = round(91.0 + (bullish_count * 1.5), 1)
             direction = "BUY (CALL) 🟢"
@@ -45,7 +41,7 @@ class MultiTimeframeEngine:
             return (
                 "NO TRADE (TF CONFLICT) ⚠️",
                 0.0,
-                "Timeframes conflicting (No clear directional consensus).",
+                "Timeframes conflicting (No clear consensus).",
                 tf_results,
             )
 
@@ -105,8 +101,8 @@ def get_main_keyboard():
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = (
-        "🤖 **MULTI-TIMEFRAME (5s - 1m) OTC SIGNAL ENGINE**\n\n"
-        "Select an asset to perform multi-timeframe micro-structure confluence analysis:"
+        "🤖 **PURE MANUAL MULTI-TIMEFRAME ENGINE**\n\n"
+        "Asset select karke 5s, 10s, 15s, 30s aur 1m multi-TF analysis hasil karein:"
     )
     await update.message.reply_text(
         msg, parse_mode="Markdown", reply_markup=get_main_keyboard()
@@ -117,13 +113,13 @@ async def button_callback_handler(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     query = update.callback_query
-    await query.answer(text="🔍 Scanning 5s, 10s, 15s, 30s & 1m structures...")
+    await query.answer(text="🔍 Analyzing 5s to 1m timeframes...")
 
     data = query.data
 
     if data == "refresh_menu":
         await query.edit_message_text(
-            "🔄 **MULTI-TIMEFRAME DASHBOARD**\n\nSelect an asset:",
+            "🔄 **MULTI-TIMEFRAME DASHBOARD**\n\nAsset select karein:",
             parse_mode="Markdown",
             reply_markup=get_main_keyboard(),
         )
@@ -136,10 +132,10 @@ async def button_callback_handler(
         "pair_AUDCAD_OTC": "AUD/CAD OTC",
         "pair_EURGBP_OTC": "EUR/GBP OTC",
         "pair_USDCHF_OTC": "USD/CHF OTC",
-        "pair_EURUSD_LIVE": "EUR/USD (Live Forex)",
-        "pair_GBPUSD_LIVE": "GBP/USD (Live Forex)",
-        "pair_USDJPY_LIVE": "USD/JPY (Live Forex)",
-        "pair_AUDUSD_LIVE": "AUD/USD (Live Forex)",
+        "pair_EURUSD_LIVE": "EUR/USD (Live)",
+        "pair_GBPUSD_LIVE": "GBP/USD (Live)",
+        "pair_USDJPY_LIVE": "USD/JPY (Live)",
+        "pair_AUDUSD_LIVE": "AUD/USD (Live)",
     }
 
     asset = pair_map.get(data, "UNKNOWN PAIR")
@@ -150,13 +146,13 @@ async def button_callback_handler(
 
     if confidence > 0:
         result_text = (
-            f"🎯 **MULTI-TIMEFRAME SIGNAL: {asset}**\n"
+            f"🎯 **MULTI-TF SIGNAL: {asset}**\n"
             f"----------------------------------------\n"
             f"🔹 **Signal:** **{direction}**\n"
-            f"🔹 **Probability Score:** `{confidence}%`\n"
+            f"🔹 **Probability:** `{confidence}%`\n"
             f"🔹 **Confluence:** `{alignment}`\n"
             f"----------------------------------------\n"
-            f"⏱️ **Micro TF Breakdown:**\n"
+            f"⏱️ **Timeframe Breakdown:**\n"
             f"• 5s: `{tf_data['5s']}` | 10s: `{tf_data['10s']}`\n"
             f"• 15s: `{tf_data['15s']}` | 30s: `{tf_data['30s']}`\n"
             f"• 1m: `{tf_data['1m']}`\n"
@@ -170,7 +166,7 @@ async def button_callback_handler(
             f"----------------------------------------\n"
             f"🔹 **Reason:** {alignment}\n"
             f"⏱️ **TF Breakdown:** 5s({tf_data['5s']}), 10s({tf_data['10s']}), 15s({tf_data['15s']}), 30s({tf_data['30s']}), 1m({tf_data['1m']})\n"
-            f"❌ **NO TRADE CONFIRMATION (High Risk).**"
+            f"❌ **NO TRADE CONFIRMATION.**"
         )
 
     await query.message.reply_text(
@@ -179,7 +175,7 @@ async def button_callback_handler(
 
 
 def main():
-    print("🚀 Starting Multi-Timeframe Signal Engine...")
+    print("🚀 Starting Pure Manual Engine...")
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start_command))
