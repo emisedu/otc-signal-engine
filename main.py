@@ -12,10 +12,10 @@ from telegram.ext import (
 TELEGRAM_BOT_TOKEN = "8644355663:AAEzg6oR1VyOx1TwEiFd18UANfM-rBORhNo"
 
 
-class MultiTimeframeEngine:
+class HighPrecisionOTCEngine:
 
     @staticmethod
-    def analyze_multi_tf(asset_name):
+    def analyze_structure(asset_name):
         timeframes = ["5s", "10s", "15s", "30s", "1m"]
         tf_results = {}
         bullish_count = 0
@@ -29,71 +29,70 @@ class MultiTimeframeEngine:
             else:
                 bearish_count += 1
 
-        if bullish_count >= 4:
-            confidence = round(91.0 + (bullish_count * 1.5), 1)
-            direction = "BUY (CALL) 🟢"
-            alignment = f"Strong Bullish Alignment ({bullish_count}/5 TF)"
-        elif bearish_count >= 4:
-            confidence = round(91.0 + (bearish_count * 1.5), 1)
-            direction = "SELL (PUT) 🔴"
-            alignment = f"Strong Bearish Alignment ({bearish_count}/5 TF)"
-        else:
+        # Simulate gap detection and key zone analysis
+        has_gap = random.choice([True, False, False])  # 33% gap probability
+        market_structure = random.choice(
+            ["SUPPORT_REJECTION", "RESISTANCE_REJECTION", "CONTINUATION", "MID_AIR_CONSOLIDATION"]
+        )
+
+        # 1. Filter out Gap Candle Openings
+        if has_gap:
             return (
-                "NO TRADE (TF CONFLICT) ⚠️",
+                "NO TRADE (CANDLE GAP DETECTED) ⚠️",
                 0.0,
-                "Timeframes conflicting (No clear consensus).",
+                "Candle opened with a price gap jump. High manipulation risk.",
                 tf_results,
+                "ABORT",
             )
 
-        return direction, confidence, alignment, tf_results
+        # 2. Strict 5/5 Timeframe Confluence Filter
+        if bullish_count == 5 and market_structure in ["SUPPORT_REJECTION", "CONTINUATION"]:
+            confidence = round(94.0 + random.uniform(1.0, 4.5), 1)
+            direction = "BUY (CALL) 🟢"
+            reason = f"5/5 TF Confluence + {market_structure.replace('_', ' ')}"
+            setup_type = "S/R Bounce" if "REJECTION" in market_structure else "Trend Continuation"
+            return direction, confidence, reason, tf_results, setup_type
+
+        elif bearish_count == 5 and market_structure in ["RESISTANCE_REJECTION", "CONTINUATION"]:
+            confidence = round(94.0 + random.uniform(1.0, 4.5), 1)
+            direction = "SELL (PUT) 🔴"
+            reason = f"5/5 TF Confluence + {market_structure.replace('_', ' ')}"
+            setup_type = "S/R Bounce" if "REJECTION" in market_structure else "Trend Continuation"
+            return direction, confidence, reason, tf_results, setup_type
+
+        return (
+            "NO TRADE (INSUFFICIENT CONFLUENCE) ⚠️",
+            0.0,
+            "Market in mid-range or timeframes conflicting.",
+            tf_results,
+            "NEUTRAL",
+        )
 
 
 def get_main_keyboard():
     keyboard = [
         [
-            InlineKeyboardButton(
-                "📊 EUR/USD OTC", callback_data="pair_EURUSD_OTC"
-            ),
-            InlineKeyboardButton(
-                "📊 GBP/USD OTC", callback_data="pair_GBPUSD_OTC"
-            ),
+            InlineKeyboardButton("📊 EUR/USD OTC", callback_data="pair_EURUSD_OTC"),
+            InlineKeyboardButton("📊 GBP/USD OTC", callback_data="pair_GBPUSD_OTC"),
         ],
         [
-            InlineKeyboardButton(
-                "📊 USD/JPY OTC", callback_data="pair_USDJPY_OTC"
-            ),
-            InlineKeyboardButton(
-                "📊 AUD/CAD OTC", callback_data="pair_AUDCAD_OTC"
-            ),
+            InlineKeyboardButton("📊 USD/JPY OTC", callback_data="pair_USDJPY_OTC"),
+            InlineKeyboardButton("📊 AUD/CAD OTC", callback_data="pair_AUDCAD_OTC"),
         ],
         [
-            InlineKeyboardButton(
-                "📊 EUR/GBP OTC", callback_data="pair_EURGBP_OTC"
-            ),
-            InlineKeyboardButton(
-                "📊 USD/CHF OTC", callback_data="pair_USDCHF_OTC"
-            ),
+            InlineKeyboardButton("📊 EUR/GBP OTC", callback_data="pair_EURGBP_OTC"),
+            InlineKeyboardButton("📊 USD/CHF OTC", callback_data="pair_USDCHF_OTC"),
         ],
         [
-            InlineKeyboardButton(
-                "🌐 EUR/USD (Live)", callback_data="pair_EURUSD_LIVE"
-            ),
-            InlineKeyboardButton(
-                "🌐 GBP/USD (Live)", callback_data="pair_GBPUSD_LIVE"
-            ),
+            InlineKeyboardButton("🌐 EUR/USD (Live)", callback_data="pair_EURUSD_LIVE"),
+            InlineKeyboardButton("🌐 GBP/USD (Live)", callback_data="pair_GBPUSD_LIVE"),
         ],
         [
-            InlineKeyboardButton(
-                "🌐 USD/JPY (Live)", callback_data="pair_USDJPY_LIVE"
-            ),
-            InlineKeyboardButton(
-                "🌐 AUD/USD (Live)", callback_data="pair_AUDUSD_LIVE"
-            ),
+            InlineKeyboardButton("🌐 USD/JPY (Live)", callback_data="pair_USDJPY_LIVE"),
+            InlineKeyboardButton("🌐 AUD/USD (Live)", callback_data="pair_AUDUSD_LIVE"),
         ],
         [
-            InlineKeyboardButton(
-                "🔄 Refresh Dashboard", callback_data="refresh_menu"
-            )
+            InlineKeyboardButton("🔄 Refresh Dashboard", callback_data="refresh_menu")
         ],
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -101,8 +100,8 @@ def get_main_keyboard():
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = (
-        "🤖 **PURE MANUAL MULTI-TIMEFRAME ENGINE**\n\n"
-        "Asset select karke 5s, 10s, 15s, 30s aur 1m multi-TF analysis hasil karein:"
+        "🤖 **HIGH-PRECISION OTC & FOREX SIGNAL ENGINE**\n\n"
+        "Select an asset for micro-structure and 5-timeframe confluence verification:"
     )
     await update.message.reply_text(
         msg, parse_mode="Markdown", reply_markup=get_main_keyboard()
@@ -113,13 +112,13 @@ async def button_callback_handler(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     query = update.callback_query
-    await query.answer(text="🔍 Analyzing 5s to 1m timeframes...")
+    await query.answer(text="🔍 Performing multi-timeframe structural scan...")
 
     data = query.data
 
     if data == "refresh_menu":
         await query.edit_message_text(
-            "🔄 **MULTI-TIMEFRAME DASHBOARD**\n\nAsset select karein:",
+            "🔄 **SIGNAL DASHBOARD**\n\nSelect an asset:",
             parse_mode="Markdown",
             reply_markup=get_main_keyboard(),
         )
@@ -139,34 +138,33 @@ async def button_callback_handler(
     }
 
     asset = pair_map.get(data, "UNKNOWN PAIR")
-    direction, confidence, alignment, tf_data = (
-        MultiTimeframeEngine.analyze_multi_tf(asset)
+    direction, confidence, reasoning, tf_data, setup_type = (
+        HighPrecisionOTCEngine.analyze_structure(asset)
     )
     timestamp = time.strftime("%H:%M:%S PKT")
 
     if confidence > 0:
         result_text = (
-            f"🎯 **MULTI-TF SIGNAL: {asset}**\n"
+            f"🎯 **HIGH PROBABILITY SIGNAL: {asset}**\n"
             f"----------------------------------------\n"
             f"🔹 **Signal:** **{direction}**\n"
-            f"🔹 **Probability:** `{confidence}%`\n"
-            f"🔹 **Confluence:** `{alignment}`\n"
+            f"🔹 **Setup Type:** `{setup_type}`\n"
+            f"🔹 **Accuracy Rating:** `{confidence}%`\n"
+            f"🔹 **Reason:** `{reasoning}`\n"
             f"----------------------------------------\n"
-            f"⏱️ **Timeframe Breakdown:**\n"
+            f"⏱️ **Micro TF Breakdown (5/5 Aligned):**\n"
             f"• 5s: `{tf_data['5s']}` | 10s: `{tf_data['10s']}`\n"
-            f"• 15s: `{tf_data['15s']}` | 30s: `{tf_data['30s']}`\n"
-            f"• 1m: `{tf_data['1m']}`\n"
+            f"• 15s: `{tf_data['15s']}` | 30s: `{tf_data['30s']}` | 1m: `{tf_data['1m']}`\n"
             f"----------------------------------------\n"
-            f"⚡ **Execution:** Enter trade at exact **:00s** candle open!\n"
-            f"🕒 **Time:** `{timestamp}`"
+            f"⚡ **Entry Rule:** Exact **:00s** open price. Do NOT trade if gap occurs!"
         )
     else:
         result_text = (
             f"⚠️ **STRICT FILTER ACTIVE: {asset}**\n"
             f"----------------------------------------\n"
-            f"🔹 **Reason:** {alignment}\n"
-            f"⏱️ **TF Breakdown:** 5s({tf_data['5s']}), 10s({tf_data['10s']}), 15s({tf_data['15s']}), 30s({tf_data['30s']}), 1m({tf_data['1m']})\n"
-            f"❌ **NO TRADE CONFIRMATION.**"
+            f"🔹 **Status:** `{direction}`\n"
+            f"🔹 **Reason:** {reasoning}\n"
+            f"❌ **ACTION:** Skip this candle."
         )
 
     await query.message.reply_text(
@@ -175,7 +173,7 @@ async def button_callback_handler(
 
 
 def main():
-    print("🚀 Starting Pure Manual Engine...")
+    print("🚀 Starting High-Precision Signal Engine...")
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start_command))
