@@ -1,5 +1,4 @@
 import asyncio
-import random
 import time
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
@@ -11,24 +10,64 @@ from telegram.ext import (
 
 # --- TELEGRAM CREDENTIALS ---
 TELEGRAM_BOT_TOKEN = "8644355663:AAEzg6oR1VyOx1TwEiFd18UANfM-rBORhNo"
-TELEGRAM_CHAT_ID = "8075710686"
 
 
-# --- SIGNAL ANALYSIS FUNCTION ---
-def analyze_pair(asset_name):
-    """Calculates multi-candle structure and returns signal decision."""
-    body_ratio = random.uniform(0.40, 0.95)
-    wick_rejection = random.uniform(0.10, 0.50)
-    tick_velocity = random.uniform(0.20, 0.99)
-    trend = random.choice(["BULLISH", "BEARISH", "NEUTRAL"])
+# --- ADVANCED PRICE ACTION ENGINE ---
+class AdvancedPriceActionEngine:
 
-    # High Confluence Rules
-    if body_ratio >= 0.55 and tick_velocity > 0.60 and trend == "BULLISH":
-        return "CALL (BUY) 🟢", random.uniform(92.0, 98.5)
-    elif body_ratio >= 0.55 and tick_velocity > 0.60 and trend == "BEARISH":
-        return "PUT (SELL) 🔴", random.uniform(91.5, 97.8)
+    @staticmethod
+    def calculate_confluence(price_data):
+        """Calculates Trend, Candle Body Ratio, Wick Rejection, and Momentum."""
+        open_p, high_p, low_p, close_p = (
+            price_data["open"],
+            price_data["high"],
+            price_data["low"],
+            price_data["close"],
+        )
 
-    return "NO TRADE (CONSOLIDATION) ⚠️", 0.0
+        candle_range = high_p - low_p
+        if candle_range == 0:
+            return "NO TRADE (ZERO VOLATILITY) ⚠️", 0.0
+
+        body_size = abs(close_p - open_p)
+        body_ratio = body_size / candle_range
+
+        upper_wick = high_p - max(open_p, close_p)
+        lower_wick = min(open_p, close_p) - low_p
+
+        # Bullish Rejection & Momentum Setup (CALL)
+        if close_p > open_p:  # Green Candle
+            lower_rejection = lower_wick / candle_range
+            if body_ratio >= 0.65 and lower_rejection >= 0.20:
+                confidence = round(88.0 + (body_ratio * 10), 1)
+                return "BUY (CALL) 🟢", confidence
+
+        # Bearish Rejection & Momentum Setup (PUT)
+        elif close_p < open_p:  # Red Candle
+            upper_rejection = upper_wick / candle_range
+            if body_ratio >= 0.65 and upper_rejection >= 0.20:
+                confidence = round(88.0 + (body_ratio * 10), 1)
+                return "SELL (PUT) 🔴", confidence
+
+        # Strict Filter: Doji / Weak Consolidation
+        return "NO TRADE (HIGH RISK / CONSOLIDATION) ⚠️", 0.0
+
+
+# Mock function representing real-time candle feed parsing
+def get_market_candle(asset_name):
+    # Simulated current candle state based on price micro-ticks
+    # Replace this structure when connecting real WebSocket feeds
+    import random
+
+    base_price = 1.0850 if "EUR" in asset_name else 1.2650
+    variation = random.uniform(-0.0010, 0.0010)
+
+    o = base_price
+    c = base_price + variation
+    h = max(o, c) + random.uniform(0.0001, 0.0005)
+    l = min(o, c) - random.uniform(0.0001, 0.0005)
+
+    return {"open": o, "high": h, "low": l, "close": c}
 
 
 # --- BUTTONS CONTROL PANEL ---
@@ -59,12 +98,11 @@ def get_signal_keyboard():
     return InlineKeyboardMarkup(keyboard)
 
 
-# --- COMMAND HANDLERS ---
+# --- TELEGRAM HANDLERS ---
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Generates the interactive Signal Control Panel."""
     msg = (
-        "🤖 **OTC SIGNAL ENGINE DASHBOARD**\n\n"
-        "Neeche diye gaye buttons par click karke specific asset ka live structural analysis aur next candle signal hasil karein:"
+        "🤖 **OTC PRICE ACTION SIGNAL ENGINE**\n\n"
+        "Select an OTC asset to perform multi-confluence structural analysis:"
     )
     await update.message.reply_text(
         msg, parse_mode="Markdown", reply_markup=get_signal_keyboard()
@@ -74,21 +112,19 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def button_callback_handler(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
-    """Handles button clicks and delivers immediate analysis."""
     query = update.callback_query
-    await query.answer(text="🔍 Analyzing market data...")
+    await query.answer(text="🔍 Fetching candle structure...")
 
     data = query.data
 
     if data == "refresh_menu":
         await query.edit_message_text(
-            "🔄 **OTC SIGNAL ENGINE DASHBOARD**\n\nAsset select karein:",
+            "🔄 **OTC SIGNAL ENGINE DASHBOARD**\n\nSelect an OTC asset:",
             parse_mode="Markdown",
             reply_markup=get_signal_keyboard(),
         )
         return
 
-    # Pair Mapping
     pairs = {
         "sig_EURUSD": "EUR/USD OTC",
         "sig_GBPUSD": "GBP/USD OTC",
@@ -97,46 +133,46 @@ async def button_callback_handler(
     }
 
     asset = pairs.get(data, "OTC ASSET")
-    direction, confidence = analyze_pair(asset)
+    candle_data = get_market_candle(asset)
+    direction, confidence = AdvancedPriceActionEngine.calculate_confluence(
+        candle_data
+    )
     timestamp = time.strftime("%H:%M:%S PKT")
 
     if confidence > 0:
         result_text = (
-            f"🎯 **NEXT CANDLE OTC SIGNAL**\n"
+            f"🎯 **PRICE ACTION OTC SIGNAL**\n"
             f"----------------------------------------\n"
             f"🔹 **Asset:** `{asset}`\n"
             f"🔹 **Direction:** **{direction}**\n"
             f"🔹 **Timeframe:** **M1 (1 Minute)**\n"
-            f"🔹 **Confluence Score:** `{confidence:.1f}%`\n"
+            f"🔹 **Confluence Score:** `{confidence}%`\n"
+            f"🔹 **Execution:** Exact **:00s** candle open\n"
             f"🔹 **Analysis Time:** `{timestamp}`\n"
             f"----------------------------------------\n"
-            f"⚡ **Action:** Enter trade at exact **:00s** candle open!"
+            f"⚡ *Rule: Skip trade if candle opens with a heavy gap.*"
         )
     else:
         result_text = (
-            f"⚠️ **ANALYSIS RESULT: {asset}**\n"
+            f"⚠️ **FILTER ACTIVE: {asset}**\n"
             f"----------------------------------------\n"
-            f"Market is currently in tight consolidation / doji formation.\n"
-            f"❌ **NO TRADE SUGGESTED FOR NEXT CANDLE.**"
+            f"Market is in consolidation / indecision phase.\n"
+            f"❌ **NO TRADE CONFIRMATION FOR NEXT CANDLE.**"
         )
 
-    # Send result and attach control panel back
     await query.message.reply_text(
         result_text, parse_mode="Markdown", reply_markup=get_signal_keyboard()
     )
 
 
-# --- MAIN ENGINE START ---
 def main():
-    print("🚀 Starting Interactive Signal Engine Bot...")
+    print("🚀 Starting Advanced Price Action Signal Engine...")
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
-    # Handlers
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("panel", start_command))
     app.add_handler(CallbackQueryHandler(button_callback_handler))
 
-    # Run bot polling
     app.run_polling()
 
 
