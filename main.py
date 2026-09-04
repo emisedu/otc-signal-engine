@@ -1,19 +1,12 @@
 import asyncio
-import random
 import time
+import random
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import (
-    Application,
-    CallbackQueryHandler,
-    CommandHandler,
-    ContextTypes,
-)
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 TELEGRAM_BOT_TOKEN = "8644355663:AAEzg6oR1VyOx1TwEiFd18UANfM-rBORhNo"
 
-
 class SignalEngine:
-
     @staticmethod
     def get_manual_analysis(asset_name):
         rsi = random.uniform(25.0, 75.0)
@@ -30,98 +23,54 @@ class SignalEngine:
 
         return direction, confidence, reason
 
-
 def get_main_keyboard():
     keyboard = [
-        # --- TOP POCKET OPTION OTC PAIRS ---
         [
-            InlineKeyboardButton(
-                "📊 EUR/USD OTC", callback_data="pair_EURUSD_OTC"
-            ),
-            InlineKeyboardButton(
-                "📊 GBP/USD OTC", callback_data="pair_GBPUSD_OTC"
-            ),
+            InlineKeyboardButton("📊 EUR/USD OTC", callback_data="pair_EURUSD_OTC"),
+            InlineKeyboardButton("📊 GBP/USD OTC", callback_data="pair_GBPUSD_OTC")
         ],
         [
-            InlineKeyboardButton(
-                "📊 USD/JPY OTC", callback_data="pair_USDJPY_OTC"
-            ),
-            InlineKeyboardButton(
-                "📊 AUD/CAD OTC", callback_data="pair_AUDCAD_OTC"
-            ),
+            InlineKeyboardButton("📊 USD/JPY OTC", callback_data="pair_USDJPY_OTC"),
+            InlineKeyboardButton("📊 AUD/CAD OTC", callback_data="pair_AUDCAD_OTC")
         ],
         [
-            InlineKeyboardButton(
-                "📊 EUR/GBP OTC", callback_data="pair_EURGBP_OTC"
-            ),
-            InlineKeyboardButton(
-                "📊 USD/CHF OTC", callback_data="pair_USDCHF_OTC"
-            ),
+            InlineKeyboardButton("📊 EUR/GBP OTC", callback_data="pair_EURGBP_OTC"),
+            InlineKeyboardButton("📊 USD/CHF OTC", callback_data="pair_USDCHF_OTC")
         ],
         [
-            InlineKeyboardButton(
-                "📊 NZD/USD OTC", callback_data="pair_NZDUSD_OTC"
-            ),
-            InlineKeyboardButton(
-                "📊 AUD/USD OTC", callback_data="pair_AUDUSD_OTC"
-            ),
-        ],
-        # --- LIVE FOREX MARKET PAIRS ---
-        [
-            InlineKeyboardButton(
-                "🌐 EUR/USD (Live)", callback_data="pair_EURUSD_LIVE"
-            ),
-            InlineKeyboardButton(
-                "🌐 GBP/USD (Live)", callback_data="pair_GBPUSD_LIVE"
-            ),
+            InlineKeyboardButton("📊 NZD/USD OTC", callback_data="pair_NZDUSD_OTC"),
+            InlineKeyboardButton("📊 AUD/USD OTC", callback_data="pair_AUDUSD_OTC")
         ],
         [
-            InlineKeyboardButton(
-                "🌐 USD/JPY (Live)", callback_data="pair_USDJPY_LIVE"
-            ),
-            InlineKeyboardButton(
-                "🌐 AUD/USD (Live)", callback_data="pair_AUDUSD_LIVE"
-            ),
+            InlineKeyboardButton("🌐 EUR/USD (Live)", callback_data="pair_EURUSD_LIVE"),
+            InlineKeyboardButton("🌐 GBP/USD (Live)", callback_data="pair_GBPUSD_LIVE")
         ],
         [
-            InlineKeyboardButton(
-                "🌐 USD/CAD (Live)", callback_data="pair_USDCAD_LIVE"
-            ),
-            InlineKeyboardButton(
-                "🌐 EUR/JPY (Live)", callback_data="pair_EURJPY_LIVE"
-            ),
+            InlineKeyboardButton("🌐 USD/JPY (Live)", callback_data="pair_USDJPY_LIVE"),
+            InlineKeyboardButton("🌐 AUD/USD (Live)", callback_data="pair_AUDUSD_LIVE")
         ],
         [
-            InlineKeyboardButton(
-                "🌐 GBP/JPY (Live)", callback_data="pair_GBPJPY_LIVE"
-            ),
-            InlineKeyboardButton(
-                "🌐 AUD/CAD (Live)", callback_data="pair_AUDCAD_LIVE"
-            ),
+            InlineKeyboardButton("🌐 USD/CAD (Live)", callback_data="pair_USDCAD_LIVE"),
+            InlineKeyboardButton("🌐 EUR/JPY (Live)", callback_data="pair_EURJPY_LIVE")
         ],
-        # --- CONTROL BUTTON ---
         [
-            InlineKeyboardButton(
-                "🔄 Refresh Dashboard", callback_data="refresh_menu"
-            )
+            InlineKeyboardButton("🌐 GBP/JPY (Live)", callback_data="pair_GBPJPY_LIVE"),
+            InlineKeyboardButton("🌐 AUD/CAD (Live)", callback_data="pair_AUDCAD_LIVE")
         ],
+        [
+            InlineKeyboardButton("🔄 Refresh Dashboard", callback_data="refresh_menu")
+        ]
     ]
     return InlineKeyboardMarkup(keyboard)
-
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = (
         "🤖 **POCKET OPTION & LIVE FOREX SIGNAL ENGINE**\n\n"
         "Neeche diye gaye kisi bhi **OTC** ya **Live Forex** asset button par click karke immediate signal hasil karein:"
     )
-    await update.message.reply_text(
-        msg, parse_mode="Markdown", reply_markup=get_main_keyboard()
-    )
+    await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=get_main_keyboard())
 
-
-async def button_callback_handler(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-):
+async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer(text="🔍 Analyzing Price Action & Momentum...")
 
@@ -131,12 +80,11 @@ async def button_callback_handler(
         await query.edit_message_text(
             "🔄 **SIGNAL ENGINE DASHBOARD**\n\nAsset select karein:",
             parse_mode="Markdown",
-            reply_markup=get_main_keyboard(),
+            reply_markup=get_main_keyboard()
         )
         return
 
     pair_map = {
-        # OTC
         "pair_EURUSD_OTC": "EUR/USD OTC",
         "pair_GBPUSD_OTC": "GBP/USD OTC",
         "pair_USDJPY_OTC": "USD/JPY OTC",
@@ -145,7 +93,6 @@ async def button_callback_handler(
         "pair_USDCHF_OTC": "USD/CHF OTC",
         "pair_NZDUSD_OTC": "NZD/USD OTC",
         "pair_AUDUSD_OTC": "AUD/USD OTC",
-        # Live
         "pair_EURUSD_LIVE": "EUR/USD (Live Forex)",
         "pair_GBPUSD_LIVE": "GBP/USD (Live Forex)",
         "pair_USDJPY_LIVE": "USD/JPY (Live Forex)",
@@ -153,7 +100,7 @@ async def button_callback_handler(
         "pair_USDCAD_LIVE": "USD/CAD (Live Forex)",
         "pair_EURJPY_LIVE": "EUR/JPY (Live Forex)",
         "pair_GBPJPY_LIVE": "GBP/JPY (Live Forex)",
-        "pair_AUDCAD_LIVE": "AUD/CAD (Live Forex)",
+        "pair_AUDCAD_LIVE": "AUD/CAD (Live Forex)"
     }
 
     asset = pair_map.get(data, "UNKNOWN PAIR")
@@ -173,10 +120,7 @@ async def button_callback_handler(
         f"⚡ **Action:** Enter trade at exact **:00s** candle open!"
     )
 
-    await query.message.reply_text(
-        result_text, parse_mode="Markdown", reply_markup=get_main_keyboard()
-    )
-
+    await query.message.reply_text(result_text, parse_mode="Markdown", reply_markup=get_main_keyboard())
 
 def main():
     print("🚀 Starting Pocket Option Multi-Pair Signal Engine...")
@@ -187,7 +131,6 @@ def main():
     app.add_handler(CallbackQueryHandler(button_callback_handler))
 
     app.run_polling()
-
 
 if __name__ == "__main__":
     main()
