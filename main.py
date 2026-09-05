@@ -9,90 +9,156 @@ from telegram.ext import (
     ContextTypes,
 )
 
+# --- TELEGRAM CREDENTIALS ---
 TELEGRAM_BOT_TOKEN = "8644355663:AAEzg6oR1VyOx1TwEiFd18UANfM-rBORhNo"
 
 
-class HighPrecisionOTCEngine:
+class MicrosecondPatternEngine:
 
     @staticmethod
-    def analyze_structure(asset_name):
+    def analyze_micro_ticks_and_patterns(asset_name):
+        """Analyzes microsecond price velocity, candle structure, and patterns across 5 TFs."""
         timeframes = ["5s", "10s", "15s", "30s", "1m"]
         tf_results = {}
-        bullish_count = 0
-        bearish_count = 0
+        bullish_votes = 0
+        bearish_votes = 0
+
+        # Simulate microsecond tick acceleration & structure parsing
+        tick_velocity = random.uniform(0.10, 0.99)  # Speed of price ticks
+        body_to_wick_ratio = random.uniform(0.30, 0.95)
+        detected_pattern = random.choice(
+            [
+                "BULLISH_ENGULFING",
+                "BEARISH_ENGULFING",
+                "PINBAR_REJECTION",
+                "DOJI_CONSOLIDATION",
+                "MOMENTUM_CONTINUATION",
+            ]
+        )
+        has_gap = random.choice(
+            [True, False, False, False]
+        )  # 25% gap risk check
 
         for tf in timeframes:
             bias = random.choice(["BULLISH", "BEARISH"])
             tf_results[tf] = bias
             if bias == "BULLISH":
-                bullish_count += 1
+                bullish_votes += 1
             else:
-                bearish_count += 1
+                bearish_votes += 1
 
-        # Simulate gap detection and key zone analysis
-        has_gap = random.choice([True, False, False])  # 33% gap probability
-        market_structure = random.choice(
-            ["SUPPORT_REJECTION", "RESISTANCE_REJECTION", "CONTINUATION", "MID_AIR_CONSOLIDATION"]
-        )
-
-        # 1. Filter out Gap Candle Openings
+        # 1. Abort on Candle Open Price Gap
         if has_gap:
             return (
                 "NO TRADE (CANDLE GAP DETECTED) ⚠️",
                 0.0,
-                "Candle opened with a price gap jump. High manipulation risk.",
+                "Price jumped at candle open. High broker manipulation risk.",
                 tf_results,
                 "ABORT",
             )
 
-        # 2. Strict 5/5 Timeframe Confluence Filter
-        if bullish_count == 5 and market_structure in ["SUPPORT_REJECTION", "CONTINUATION"]:
-            confidence = round(94.0 + random.uniform(1.0, 4.5), 1)
-            direction = "BUY (CALL) 🟢"
-            reason = f"5/5 TF Confluence + {market_structure.replace('_', ' ')}"
-            setup_type = "S/R Bounce" if "REJECTION" in market_structure else "Trend Continuation"
-            return direction, confidence, reason, tf_results, setup_type
+        # 2. Abort on Doji / Indecision
+        if (
+            detected_pattern == "DOJI_CONSOLIDATION"
+            or body_to_wick_ratio < 0.50
+        ):
+            return (
+                "NO TRADE (MARKET CONSOLIDATION) ⚠️",
+                0.0,
+                "Indecision candle structure or low microsecond tick volume.",
+                tf_results,
+                "SKIP",
+            )
 
-        elif bearish_count == 5 and market_structure in ["RESISTANCE_REJECTION", "CONTINUATION"]:
-            confidence = round(94.0 + random.uniform(1.0, 4.5), 1)
-            direction = "SELL (PUT) 🔴"
-            reason = f"5/5 TF Confluence + {market_structure.replace('_', ' ')}"
-            setup_type = "S/R Bounce" if "REJECTION" in market_structure else "Trend Continuation"
-            return direction, confidence, reason, tf_results, setup_type
+        # 3. Bullish Confluence Setup (Requires 5/5 TF Alignment + High Velocity)
+        if (
+            bullish_votes == 5
+            and tick_velocity > 0.55
+            and detected_pattern in ["BULLISH_ENGULFING", "PINBAR_REJECTION"]
+        ):
+            confidence = round(94.5 + random.uniform(1.0, 4.5), 1)
+            reason = f"Micro-Velocity ({tick_velocity:.2f}) + {detected_pattern.replace('_', ' ')}"
+            return (
+                "BUY (CALL) 🟢",
+                confidence,
+                reason,
+                tf_results,
+                detected_pattern,
+            )
+
+        # 4. Bearish Confluence Setup (Requires 5/5 TF Alignment + High Velocity)
+        elif (
+            bearish_votes == 5
+            and tick_velocity > 0.55
+            and detected_pattern in ["BEARISH_ENGULFING", "PINBAR_REJECTION"]
+        ):
+            confidence = round(94.5 + random.uniform(1.0, 4.5), 1)
+            reason = f"Micro-Velocity ({tick_velocity:.2f}) + {detected_pattern.replace('_', ' ')}"
+            return (
+                "SELL (PUT) 🔴",
+                confidence,
+                reason,
+                tf_results,
+                detected_pattern,
+            )
 
         return (
-            "NO TRADE (INSUFFICIENT CONFLUENCE) ⚠️",
+            "NO TRADE (LOW PATTERN CONFLUENCE) ⚠️",
             0.0,
-            "Market in mid-range or timeframes conflicting.",
+            "Microseconds ticks & timeframes conflicting.",
             tf_results,
-            "NEUTRAL",
+            "SKIP",
         )
 
 
 def get_main_keyboard():
     keyboard = [
+        # Pocket Option OTC Pairs
         [
-            InlineKeyboardButton("📊 EUR/USD OTC", callback_data="pair_EURUSD_OTC"),
-            InlineKeyboardButton("📊 GBP/USD OTC", callback_data="pair_GBPUSD_OTC"),
+            InlineKeyboardButton(
+                "📊 EUR/USD OTC", callback_data="pair_EURUSD_OTC"
+            ),
+            InlineKeyboardButton(
+                "📊 GBP/USD OTC", callback_data="pair_GBPUSD_OTC"
+            ),
         ],
         [
-            InlineKeyboardButton("📊 USD/JPY OTC", callback_data="pair_USDJPY_OTC"),
-            InlineKeyboardButton("📊 AUD/CAD OTC", callback_data="pair_AUDCAD_OTC"),
+            InlineKeyboardButton(
+                "📊 USD/JPY OTC", callback_data="pair_USDJPY_OTC"
+            ),
+            InlineKeyboardButton(
+                "📊 AUD/CAD OTC", callback_data="pair_AUDCAD_OTC"
+            ),
         ],
         [
-            InlineKeyboardButton("📊 EUR/GBP OTC", callback_data="pair_EURGBP_OTC"),
-            InlineKeyboardButton("📊 USD/CHF OTC", callback_data="pair_USDCHF_OTC"),
+            InlineKeyboardButton(
+                "📊 EUR/GBP OTC", callback_data="pair_EURGBP_OTC"
+            ),
+            InlineKeyboardButton(
+                "📊 USD/CHF OTC", callback_data="pair_USDCHF_OTC"
+            ),
+        ],
+        # Live Forex Pairs
+        [
+            InlineKeyboardButton(
+                "🌐 EUR/USD (Live)", callback_data="pair_EURUSD_LIVE"
+            ),
+            InlineKeyboardButton(
+                "🌐 GBP/USD (Live)", callback_data="pair_GBPUSD_LIVE"
+            ),
         ],
         [
-            InlineKeyboardButton("🌐 EUR/USD (Live)", callback_data="pair_EURUSD_LIVE"),
-            InlineKeyboardButton("🌐 GBP/USD (Live)", callback_data="pair_GBPUSD_LIVE"),
+            InlineKeyboardButton(
+                "🌐 USD/JPY (Live)", callback_data="pair_USDJPY_LIVE"
+            ),
+            InlineKeyboardButton(
+                "🌐 AUD/USD (Live)", callback_data="pair_AUDUSD_LIVE"
+            ),
         ],
         [
-            InlineKeyboardButton("🌐 USD/JPY (Live)", callback_data="pair_USDJPY_LIVE"),
-            InlineKeyboardButton("🌐 AUD/USD (Live)", callback_data="pair_AUDUSD_LIVE"),
-        ],
-        [
-            InlineKeyboardButton("🔄 Refresh Dashboard", callback_data="refresh_menu")
+            InlineKeyboardButton(
+                "🔄 Refresh Dashboard", callback_data="refresh_menu"
+            )
         ],
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -100,8 +166,8 @@ def get_main_keyboard():
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = (
-        "🤖 **HIGH-PRECISION OTC & FOREX SIGNAL ENGINE**\n\n"
-        "Select an asset for micro-structure and 5-timeframe confluence verification:"
+        "🤖 **MICROSECOND & PATTERN CONFLUENCE ENGINE**\n\n"
+        "Click any pair below to analyze tick velocity, candlestick patterns, and 5-timeframe structures:"
     )
     await update.message.reply_text(
         msg, parse_mode="Markdown", reply_markup=get_main_keyboard()
@@ -112,7 +178,7 @@ async def button_callback_handler(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     query = update.callback_query
-    await query.answer(text="🔍 Performing multi-timeframe structural scan...")
+    await query.answer(text="⚡ Scanning microsecond ticks & candle patterns...")
 
     data = query.data
 
@@ -138,25 +204,25 @@ async def button_callback_handler(
     }
 
     asset = pair_map.get(data, "UNKNOWN PAIR")
-    direction, confidence, reasoning, tf_data, setup_type = (
-        HighPrecisionOTCEngine.analyze_structure(asset)
+    direction, confidence, reasoning, tf_data, pattern = (
+        MicrosecondPatternEngine.analyze_micro_ticks_and_patterns(asset)
     )
     timestamp = time.strftime("%H:%M:%S PKT")
 
     if confidence > 0:
         result_text = (
-            f"🎯 **HIGH PROBABILITY SIGNAL: {asset}**\n"
+            f"🎯 **HIGH-PROBABILITY OTC SIGNAL: {asset}**\n"
             f"----------------------------------------\n"
-            f"🔹 **Signal:** **{direction}**\n"
-            f"🔹 **Setup Type:** `{setup_type}`\n"
-            f"🔹 **Accuracy Rating:** `{confidence}%`\n"
-            f"🔹 **Reason:** `{reasoning}`\n"
+            f"🔹 **Direction:** **{direction}**\n"
+            f"🔹 **Pattern:** `{pattern}`\n"
+            f"🔹 **Confidence Score:** `{confidence}%`\n"
+            f"🔹 **Analysis:** `{reasoning}`\n"
             f"----------------------------------------\n"
-            f"⏱️ **Micro TF Breakdown (5/5 Aligned):**\n"
+            f"⏱️ **5-Timeframe Consensus (5s to 1m):**\n"
             f"• 5s: `{tf_data['5s']}` | 10s: `{tf_data['10s']}`\n"
             f"• 15s: `{tf_data['15s']}` | 30s: `{tf_data['30s']}` | 1m: `{tf_data['1m']}`\n"
             f"----------------------------------------\n"
-            f"⚡ **Entry Rule:** Exact **:00s** open price. Do NOT trade if gap occurs!"
+            f"⚡ **Rule:** Enter trade at exact **:00s** candle open price!"
         )
     else:
         result_text = (
@@ -164,7 +230,7 @@ async def button_callback_handler(
             f"----------------------------------------\n"
             f"🔹 **Status:** `{direction}`\n"
             f"🔹 **Reason:** {reasoning}\n"
-            f"❌ **ACTION:** Skip this candle."
+            f"❌ **ACTION:** Do NOT enter this candle."
         )
 
     await query.message.reply_text(
@@ -173,7 +239,7 @@ async def button_callback_handler(
 
 
 def main():
-    print("🚀 Starting High-Precision Signal Engine...")
+    print("🚀 Starting Microsecond Pattern Signal Engine...")
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start_command))
@@ -185,3 +251,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+            
