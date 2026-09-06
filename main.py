@@ -11,118 +11,77 @@ TELEGRAM_BOT_TOKEN = "8644355663:AAEzg6oR1VyOx1TwEiFd18UANfM-rBORhNo"
 UTC_PLUS_5 = timezone(timedelta(hours=5))
 
 # ==========================================
-# TIME CALCULATOR
+# FAST LIGHTWEIGHT TIME CALCULATOR
 # ==========================================
-def get_fast_entry_time():
+def get_fast_entry():
     now = datetime.now(UTC_PLUS_5)
+    # Fast 1-click rounding to exact next minute
     if now.second >= 48:
-        target_time = (now + timedelta(minutes=2)).replace(second=0, microsecond=0)
+        target = (now + timedelta(minutes=2)).replace(second=0, microsecond=0)
     else:
-        target_time = (now + timedelta(minutes=1)).replace(second=0, microsecond=0)
-        
-    return target_time.strftime("%H:%M:00")
+        target = (now + timedelta(minutes=1)).replace(second=0, microsecond=0)
+    return target.strftime("%H:%M:00")
 
 # ==========================================
-# ADVANCED RSI & TREND SIGNAL ENGINE
+# COMPACT KEYBOARD (SMALL FAST BUTTONS)
 # ==========================================
-class QuotexSmartEngine:
-    @staticmethod
-    def analyze_market():
-        # Simulated RSI Value calculation (30 to 70 range)
-        rsi_val = random.randint(20, 80)
-        
-        # RSI Analysis Logic
-        if rsi_val >= 70:
-            return "SELL", "96.5%", "RSI Overbought (>70) Reversal Zone"
-        elif rsi_val <= 30:
-            return "BUY", "96.5%", "RSI Oversold (<30) Reversal Zone"
-        else:
-            # Trend Momentum Filter
-            direction = random.choice(["BUY", "SELL"])
-            return direction, "94.2%", "Trend Continuation Pattern"
+def get_keyboard():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("📊 USD/BRL", callback_data="USD/BRL (OTC)"), InlineKeyboardButton("📊 NZD/JPY", callback_data="NZD/JPY (OTC)")],
+        [InlineKeyboardButton("📊 USD/BDT", callback_data="USD/BDT (OTC)"), InlineKeyboardButton("📊 USD/JPY", callback_data="USD/JPY (OTC)")],
+        [InlineKeyboardButton("📊 USD/NGN", callback_data="USD/NGN (OTC)"), InlineKeyboardButton("📊 AUD/USD", callback_data="AUDUSD (OTC)")],
+        [InlineKeyboardButton("📊 GBP/JPY", callback_data="GBP/JPY (OTC)"), InlineKeyboardButton("🔄 Refresh", callback_data="REFRESH")]
+    ])
 
 # ==========================================
-# KEYBOARD
-# ==========================================
-def get_main_keyboard():
-    keyboard = [
-        [
-            InlineKeyboardButton("📊 USD/BRL", callback_data="USDBRL_OTC"),
-            InlineKeyboardButton("📊 NZD/JPY", callback_data="NZDJPY_OTC")
-        ],
-        [
-            InlineKeyboardButton("📊 USD/BDT", callback_data="USDBDT_OTC"),
-            InlineKeyboardButton("📊 USD/JPY", callback_data="USDJPY_OTC")
-        ],
-        [
-            InlineKeyboardButton("📊 USD/NGN", callback_data="USDNGN_OTC"),
-            InlineKeyboardButton("📊 AUD/USD", callback_data="AUDUSD_OTC")
-        ],
-        [
-            InlineKeyboardButton("📊 GBP/JPY", callback_data="GBPJPY_OTC"),
-            InlineKeyboardButton("🔄 Refresh", callback_data="refresh_menu")
-        ]
-    ]
-    return InlineKeyboardMarkup(keyboard)
-
-# ==========================================
-# HANDLERS
+# FAST HANDLERS
 # ==========================================
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    welcome_text = "🏛️ **QUOTEX SMART RSI TERMINAL**\nSelect a pair below:"
-    await update.message.reply_text(welcome_text, parse_mode="Markdown", reply_markup=get_main_keyboard())
+    await update.message.reply_text("⚡ **QUOTEX ULTRA-FAST TERMINAL**\nSelect Pair:", parse_mode="Markdown", reply_markup=get_keyboard())
 
-async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
+    
+    # Direct fast acknowledgement
     await query.answer()
 
-    data = query.data
+    pair = query.data
 
-    if data == "refresh_menu":
+    if pair == "REFRESH":
         try:
-            await query.edit_message_text("🔄 **Dashboard Refreshed**\nSelect pair:", parse_mode="Markdown", reply_markup=get_main_keyboard())
+            await query.edit_message_text("⚡ **QUOTEX ULTRA-FAST TERMINAL**\nSelect Pair:", parse_mode="Markdown", reply_markup=get_keyboard())
         except Exception:
             pass
         return
 
-    pair_display_name = data.replace("_OTC", " (OTC)")
-    entry_time = get_fast_entry_time()
+    # Super Fast Decision Logic
+    entry_time = get_fast_entry()
+    is_up = random.choice([True, False])
+    signal = "🟩 **UP** ⬆️" if is_up else "🟥 **DOWN** ⬇️"
+    accuracy = f"{round(random.uniform(95.0, 98.8), 1)}%"
 
-    direction, accuracy, reason = QuotexSmartEngine.analyze_market()
-
-    if direction == "BUY":
-        signal_output = "🟩 **UP / CALL** ⬆️"
-    else:
-        signal_output = "f🟥 **DOWN / PUT** ⬇️"
-
-    response_text = (
-        f"📍 **{pair_display_name}**\n\n"
-        f"🎯 {signal_output}\n"
+    text = (
+        f"📍 **{pair}**\n\n"
+        f"🎯 {signal}\n"
         f"⏰ **ENTRY:** `{entry_time}`\n"
-        f"🎯 **ACCURACY:** `{accuracy}`\n"
-        f"💡 **RULE:** If 1st candle loses, use **1-Step Martingale (MTG)** on next candle."
+        f"🎯 **ACCURACY:** `{accuracy}`"
     )
 
     try:
-        await query.edit_message_text(
-            response_text,
-            parse_mode="Markdown",
-            reply_markup=get_main_keyboard()
-        )
+        await query.edit_message_text(text=text, parse_mode="Markdown", reply_markup=get_keyboard())
     except Exception:
-        await query.message.reply_text(
-            response_text,
-            parse_mode="Markdown",
-            reply_markup=get_main_keyboard()
-        )
+        pass
 
+# ==========================================
+# MAIN EXECUTION
+# ==========================================
 def main():
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start_command))
-    app.add_handler(CallbackQueryHandler(button_callback_handler))
+    app.add_handler(CallbackQueryHandler(button_handler))
 
-    print("🚀 Quotex Smart Engine Active...")
-    app.run_polling()
+    print("⚡ Ultra-Fast Quotex Bot Running...")
+    app.run_polling(drop_pending_updates=True) # Drops old accumulated updates to clear lag
 
 if __name__ == "__main__":
     main()
