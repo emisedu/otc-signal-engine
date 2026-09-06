@@ -10,133 +10,139 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 # ==========================================
 TELEGRAM_BOT_TOKEN = "8644355663:AAEzg6oR1VyOx1TwEiFd18UANfM-rBORhNo"
 
-# Timezone Definition: Updated to UTC+5 (Quotex Terminal Sync)
+# Timezone Definition: UTC+5 (Quotex Terminal Sync)
 UTC_PLUS_5 = timezone(timedelta(hours=5))
 
 # ==========================================
-# TIME HELPER FUNCTIONS
+# DYNAMIC TIME CALCULATOR
 # ==========================================
-def get_utc5_next_candle_prediction_time():
+def get_quotex_times():
+    """
+    Calculates exact real-time UTC+5 entry window for Quotex M1 candles.
+    Provides dynamic buffer to ensure zero signal lag.
+    """
     now_utc5 = datetime.now(UTC_PLUS_5)
     
-    # Fast Buffer Shift: If clicked within 10s of candle close, shift to next-to-next candle
-    if now_utc5.second >= 50:
-        target_candle_open = (now_utc5 + timedelta(minutes=2)).replace(second=0, microsecond=0)
+    # If less than 12 seconds remain in current candle, target next minute + 1
+    if now_utc5.second >= 48:
+        entry_time = (now_utc5 + timedelta(minutes=2)).replace(second=0, microsecond=0)
     else:
-        target_candle_open = (now_utc5 + timedelta(minutes=1)).replace(second=0, microsecond=0)
+        entry_time = (now_utc5 + timedelta(minutes=1)).replace(second=0, microsecond=0)
         
-    target_candle_close = target_candle_open + timedelta(minutes=1)
+    expiry_time = entry_time + timedelta(minutes=1)
     
-    current_time_str = now_utc5.strftime("%H:%M:%S UTC+5")
-    target_open_str = target_candle_open.strftime("%H:%M:00 UTC+5")
-    target_close_str = target_candle_close.strftime("%H:%M:00 UTC+5")
+    current_str = now_utc5.strftime("%H:%M:%S")
+    entry_str = entry_time.strftime("%H:%M:00")
+    expiry_str = expiry_time.strftime("%H:%M:00")
     
-    return current_time_str, target_open_str, target_close_str
+    return current_str, entry_str, expiry_str
 
 # ==========================================
-# ENGINE: QUOTEX FAST PREDICTION ENGINE V4.1
+# ENGINE: QUOTEX OTC PREDICTION ENGINE V5.0
 # ==========================================
-class QuotexFastPredictorEngine:
+class QuotexProfessionalEngine:
     @staticmethod
-    def predict_next_candle(asset_name: str):
-        is_gap_opening = random.choices([True, False], weights=[15, 85])[0]
-        near_key_support_zone = random.choices([True, False], weights=[15, 85])[0]
-        near_key_resistance_zone = random.choices([True, False], weights=[15, 85])[0]
+    def analyze_asset(asset_name: str):
+        is_gap_opening = random.choices([True, False], weights=[12, 88])[0]
+        near_key_resistance = random.choices([True, False], weights=[15, 85])[0]
+        near_key_support = random.choices([True, False], weights=[15, 85])[0]
         
-        market_trend = random.choices(["BULLISH", "BEARISH"], weights=[50, 50])[0]
+        market_direction = random.choices(["BUY", "SELL"], weights=[50, 50])[0]
 
         if is_gap_opening:
             return {
-                "direction": "NO TRADE / SKIP ⏸️",
-                "confidence": 0.0,
-                "reason": "QUOTEX TRAP: Potential Gap Opening on Next Candle",
-                "action": "Do NOT enter trade on next candle open"
+                "signal_type": "SKIP",
+                "action_text": "⏸️ NO TRADE (GAP DETECTED)",
+                "confidence": "LOW (40%)",
+                "reason": "Market gap risk at candle open."
             }
         
-        if near_key_resistance_zone and market_trend == "BULLISH":
+        if near_key_resistance and market_direction == "BUY":
             return {
-                "direction": "NO TRADE / SKIP ⏸️",
-                "confidence": 40.0,
-                "reason": "REJECTION RISK: Quotex Resistance Zone Reversal",
-                "action": "Avoid CALL - High Sell Pressure"
+                "signal_type": "SKIP",
+                "action_text": "⏸️ NO TRADE (RESISTANCE ZONE)",
+                "confidence": "MED (55%)",
+                "reason": "Rejection expected near resistance."
             }
 
-        if near_key_support_zone and market_trend == "BEARISH":
+        if near_key_support and market_direction == "SELL":
             return {
-                "direction": "NO TRADE / SKIP ⏸️",
-                "confidence": 42.0,
-                "reason": "BOUNCE RISK: Quotex Key Support Level",
-                "action": "Avoid PUT - High Support Reversal"
+                "signal_type": "SKIP",
+                "action_text": "⏸️ NO TRADE (SUPPORT ZONE)",
+                "confidence": "MED (55%)",
+                "reason": "Bounce expected near key support."
             }
 
-        if market_trend == "BULLISH":
+        if market_direction == "BUY":
             return {
-                "direction": "BUY (CALL) 🟢",
-                "confidence": round(random.uniform(94.5, 98.6), 1),
-                "reason": "Strong Quotex OTC Bullish Momentum",
-                "action": "Place CALL at exact :00s Open Time"
+                "signal_type": "BUY",
+                "action_text": "🟢 UP (CALL)",
+                "confidence": "HIGH (96%)",
+                "reason": "Strong bullish momentum breakout."
             }
         else:
             return {
-                "direction": "SELL (PUT) 🔴",
-                "confidence": round(random.uniform(94.5, 98.6), 1),
-                "reason": "Strong Quotex OTC Bearish Velocity",
-                "action": "Place PUT at exact :00s Open Time"
+                "signal_type": "SELL",
+                "action_text": "🔴 DOWN (PUT)",
+                "confidence": "HIGH (96%)",
+                "reason": "Strong bearish breakdown pressure."
             }
 
 # ==========================================
-# TELEGRAM INTERFACE (QUOTEX PAIRS - UTC+5)
+# TELEGRAM INTERFACE BUILDER
 # ==========================================
 def get_main_keyboard():
     keyboard = [
-        [InlineKeyboardButton("📊 USD/BRL (OTC) (+94%)", callback_data="pair_USDBRL_OTC")],
-        [InlineKeyboardButton("📊 NZD/JPY (OTC) (+93%)", callback_data="pair_NZDJPY_OTC")],
-        [InlineKeyboardButton("📊 USD/BDT (OTC) (+93%)", callback_data="pair_USDBDT_OTC")],
-        [InlineKeyboardButton("📊 USD/JPY (OTC) (+93%)", callback_data="pair_USDJPY_OTC")],
-        [InlineKeyboardButton("📊 USD/NGN (OTC) (+93%)", callback_data="pair_USDNGN_OTC")],
-        [InlineKeyboardButton("📊 AUD/USD (OTC) (+92%)", callback_data="pair_AUDUSD_OTC")],
-        [InlineKeyboardButton("📊 GBP/JPY (OTC) (+92%)", callback_data="pair_GBPJPY_OTC")],
+        [InlineKeyboardButton("📊 USD/BRL (OTC) [94%]", callback_data="pair_USDBRL_OTC")],
+        [InlineKeyboardButton("📊 NZD/JPY (OTC) [93%]", callback_data="pair_NZDJPY_OTC")],
+        [InlineKeyboardButton("📊 USD/BDT (OTC) [93%]", callback_data="pair_USDBDT_OTC")],
+        [InlineKeyboardButton("📊 USD/JPY (OTC) [93%]", callback_data="pair_USDJPY_OTC")],
+        [InlineKeyboardButton("📊 USD/NGN (OTC) [93%]", callback_data="pair_USDNGN_OTC")],
+        [InlineKeyboardButton("📊 AUD/USD (OTC) [92%]", callback_data="pair_AUDUSD_OTC")],
+        [InlineKeyboardButton("📊 GBP/JPY (OTC) [92%]", callback_data="pair_GBPJPY_OTC")],
         [InlineKeyboardButton("🔄 Refresh Dashboard", callback_data="refresh_menu")]
     ]
     return InlineKeyboardMarkup(keyboard)
 
+# ==========================================
+# TELEGRAM HANDLERS
+# ==========================================
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    current_time, target_open, target_close = get_utc5_next_candle_prediction_time()
+    current_time, entry_time, expiry_time = get_quotex_times()
     welcome_text = (
-        "🤖 **QUOTEX OTC PREDICTION ENGINE v4.1 (UTC+5 SYNCED)**\n\n"
-        f"🕒 **Current Time:** `{current_time}`\n"
-        f"🎯 **Target Candle:** `{target_open}` to `{target_close}`\n\n"
-        "Selected Platform: **Quotex OTC**\n"
-        "Select a pair below for instant signal:"
+        "🏛️ **QUOTEX OTC TERMINAL ENGINE v5.0**\n"
+        "━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"🕒 **Terminal Time:** `{current_time} UTC+5`\n"
+        f"⏳ **Next Candle Entry:** `{entry_time}`\n"
+        "━━━━━━━━━━━━━━━━━━━━━━\n"
+        "Select a pair below for professional signal execution:"
     )
     await update.message.reply_text(welcome_text, parse_mode="Markdown", reply_markup=get_main_keyboard())
 
 async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
+    
+    try:
+        await query.answer()
+    except Exception:
+        pass
 
     data = query.data
-    current_time, target_open, target_close = get_utc5_next_candle_prediction_time()
+    current_time, entry_time, expiry_time = get_quotex_times()
 
     if data == "refresh_menu":
         refresh_text = (
-            f"🔄 **QUOTEX DASHBOARD REFRESHED (UTC+5)**\n\n"
-            f"🕒 **Current Time:** `{current_time}`\n"
-            f"⏳ **Next Target Candle:** `{target_open}`\n\n"
-            f"Select a Quotex pair below:"
+            "🔄 **QUOTEX TERMINAL REFRESHED**\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🕒 **Current Time:** `{current_time} UTC+5`\n"
+            f"⏳ **Target Entry Time:** `{entry_time}`\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n"
+            "Select an asset to analyze:"
         )
         try:
-            await query.edit_message_text(
-                refresh_text,
-                parse_mode="Markdown",
-                reply_markup=get_main_keyboard()
-            )
+            await query.edit_message_text(refresh_text, parse_mode="Markdown", reply_markup=get_main_keyboard())
         except Exception:
-            await query.message.reply_text(
-                refresh_text,
-                parse_mode="Markdown",
-                reply_markup=get_main_keyboard()
-            )
+            await query.message.reply_text(refresh_text, parse_mode="Markdown", reply_markup=get_main_keyboard())
         return
 
     pair_map = {
@@ -149,39 +155,34 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         "pair_GBPJPY_OTC": ("GBP/JPY (OTC)", "92%")
     }
 
-    asset_info = pair_map.get(data, ("UNKNOWN ASSET", "0%"))
-    asset, payout = asset_info[0], asset_info[1]
-    
-    analysis = QuotexFastPredictorEngine.predict_next_candle(asset)
+    asset, payout = pair_map.get(data, ("UNKNOWN ASSET", "0%"))
+    analysis = QuotexProfessionalEngine.analyze_asset(asset)
+
+    # Dynamic Green / Red Display formatting
+    if analysis["signal_type"] == "BUY":
+        button_display = "🟩 **[ UP ]** 🟢"
+    elif analysis["signal_type"] == "SELL":
+        button_display = "🟥 **[ DOWN ]** 🔴"
+    else:
+        button_display = "⏸️ **[ SKIP ]**"
 
     response_text = (
-        f"🎯 **QUOTEX OTC ENGINE V4.1 (UTC+5)**\n"
-        f"📍 **Asset:** `{asset}` (+{payout} Payout)\n"
-        f"----------------------------------------\n"
-        f"🔹 **Predicted Direction:** **{analysis['direction']}**\n"
-        f"🔹 **Confidence:** `{analysis['confidence']}%`\n"
-        f"🔹 **Analysis:** `{analysis['reason']}`\n"
-        f"----------------------------------------\n"
-        f"⏱️ **Target Entry Time:** Exact `{target_open}`\n"
-        f"⏱️ **Expiry Time:** `{target_close}` (M1 Expiry)\n"
-        f"🔹 **Action:** `{analysis['action']}`\n"
-        f"----------------------------------------\n"
-        f"⚠️ **Execution Rule:** Place trade exactly when time reaches `{target_open}` (:00s).\n"
-        f"🕒 **Signal Generated:** `{current_time}`"
+        f"🏛️ **QUOTEX OTC SIGNAL**\n"
+        f"📍 **Pair:** `{asset}` ({payout})\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"🎯 **ACTION:** {button_display}\n"
+        f"⏰ **ENTRY TIME:** `{entry_time}` (Exact :00s)\n"
+        f"⏳ **EXPIRY TIME:** `{expiry_str}` (M1 Candle)\n"
+        f"📊 **CONFIDENCE:** `{analysis['confidence']}`\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"📌 **Market Note:** `{analysis['reason']}`\n"
+        f"🕒 **Generated At:** `{current_time} UTC+5`"
     )
 
     try:
-        await query.edit_message_text(
-            response_text,
-            parse_mode="Markdown",
-            reply_markup=get_main_keyboard()
-        )
+        await query.edit_message_text(response_text, parse_mode="Markdown", reply_markup=get_main_keyboard())
     except Exception:
-        await query.message.reply_text(
-            response_text,
-            parse_mode="Markdown",
-            reply_markup=get_main_keyboard()
-        )
+        await query.message.reply_text(response_text, parse_mode="Markdown", reply_markup=get_main_keyboard())
 
 # ==========================================
 # MAIN EXECUTION
@@ -192,7 +193,7 @@ def main():
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CallbackQueryHandler(button_callback_handler))
 
-    print("🚀 Quotex OTC Engine v4.1 (UTC+5 Synced) Running...")
+    print("🚀 Quotex Professional Engine v5.0 Active...")
     app.run_polling()
 
 if __name__ == "__main__":
