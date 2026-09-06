@@ -10,31 +10,31 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 # ==========================================
 TELEGRAM_BOT_TOKEN = "8644355663:AAEzg6oR1VyOx1TwEiFd18UANfM-rBORhNo"
 
-# Timezone Definition: UTC+4
-UTC_PLUS_4 = timezone(timedelta(hours=4))
+# Timezone Definition: Updated to UTC+5 (Quotex Terminal Sync)
+UTC_PLUS_5 = timezone(timedelta(hours=5))
 
 # ==========================================
 # TIME HELPER FUNCTIONS
 # ==========================================
-def get_utc4_next_candle_prediction_time():
-    now_utc4 = datetime.now(UTC_PLUS_4)
+def get_utc5_next_candle_prediction_time():
+    now_utc5 = datetime.now(UTC_PLUS_5)
     
     # Fast Buffer Shift: If clicked within 10s of candle close, shift to next-to-next candle
-    if now_utc4.second >= 50:
-        target_candle_open = (now_utc4 + timedelta(minutes=2)).replace(second=0, microsecond=0)
+    if now_utc5.second >= 50:
+        target_candle_open = (now_utc5 + timedelta(minutes=2)).replace(second=0, microsecond=0)
     else:
-        target_candle_open = (now_utc4 + timedelta(minutes=1)).replace(second=0, microsecond=0)
+        target_candle_open = (now_utc5 + timedelta(minutes=1)).replace(second=0, microsecond=0)
         
     target_candle_close = target_candle_open + timedelta(minutes=1)
     
-    current_time_str = now_utc4.strftime("%H:%M:%S UTC+4")
-    target_open_str = target_candle_open.strftime("%H:%M:00 UTC+4")
-    target_close_str = target_candle_close.strftime("%H:%M:00 UTC+4")
+    current_time_str = now_utc5.strftime("%H:%M:%S UTC+5")
+    target_open_str = target_candle_open.strftime("%H:%M:00 UTC+5")
+    target_close_str = target_candle_close.strftime("%H:%M:00 UTC+5")
     
     return current_time_str, target_open_str, target_close_str
 
 # ==========================================
-# ENGINE: QUOTEX FAST PREDICTION ENGINE V4.0
+# ENGINE: QUOTEX FAST PREDICTION ENGINE V4.1
 # ==========================================
 class QuotexFastPredictorEngine:
     @staticmethod
@@ -85,10 +85,9 @@ class QuotexFastPredictorEngine:
             }
 
 # ==========================================
-# TELEGRAM INTERFACE (QUOTEX PAIRS ONLY)
+# TELEGRAM INTERFACE (QUOTEX PAIRS - UTC+5)
 # ==========================================
 def get_main_keyboard():
-    # Exact 7 pairs from Quotex screenshot
     keyboard = [
         [InlineKeyboardButton("📊 USD/BRL (OTC) (+94%)", callback_data="pair_USDBRL_OTC")],
         [InlineKeyboardButton("📊 NZD/JPY (OTC) (+93%)", callback_data="pair_NZDJPY_OTC")],
@@ -102,9 +101,9 @@ def get_main_keyboard():
     return InlineKeyboardMarkup(keyboard)
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    current_time, target_open, target_close = get_utc4_next_candle_prediction_time()
+    current_time, target_open, target_close = get_utc5_next_candle_prediction_time()
     welcome_text = (
-        "🤖 **QUOTEX OTC PREDICTION ENGINE v4.0 (TESTING)**\n\n"
+        "🤖 **QUOTEX OTC PREDICTION ENGINE v4.1 (UTC+5 SYNCED)**\n\n"
         f"🕒 **Current Time:** `{current_time}`\n"
         f"🎯 **Target Candle:** `{target_open}` to `{target_close}`\n\n"
         "Selected Platform: **Quotex OTC**\n"
@@ -117,11 +116,11 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
     await query.answer()
 
     data = query.data
-    current_time, target_open, target_close = get_utc4_next_candle_prediction_time()
+    current_time, target_open, target_close = get_utc5_next_candle_prediction_time()
 
     if data == "refresh_menu":
         refresh_text = (
-            f"🔄 **QUOTEX DASHBOARD REFRESHED**\n\n"
+            f"🔄 **QUOTEX DASHBOARD REFRESHED (UTC+5)**\n\n"
             f"🕒 **Current Time:** `{current_time}`\n"
             f"⏳ **Next Target Candle:** `{target_open}`\n\n"
             f"Select a Quotex pair below:"
@@ -156,7 +155,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
     analysis = QuotexFastPredictorEngine.predict_next_candle(asset)
 
     response_text = (
-        f"🎯 **QUOTEX OTC ENGINE V4.0**\n"
+        f"🎯 **QUOTEX OTC ENGINE V4.1 (UTC+5)**\n"
         f"📍 **Asset:** `{asset}` (+{payout} Payout)\n"
         f"----------------------------------------\n"
         f"🔹 **Predicted Direction:** **{analysis['direction']}**\n"
@@ -193,7 +192,7 @@ def main():
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CallbackQueryHandler(button_callback_handler))
 
-    print("🚀 Quotex OTC Engine v4.0 (7 Testing Pairs) Running...")
+    print("🚀 Quotex OTC Engine v4.1 (UTC+5 Synced) Running...")
     app.run_polling()
 
 if __name__ == "__main__":
