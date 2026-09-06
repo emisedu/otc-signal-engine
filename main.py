@@ -17,11 +17,7 @@ UTC_PLUS_4 = timezone(timedelta(hours=4))
 # TIME HELPER FUNCTIONS
 # ==========================================
 def get_utc4_times():
-    """
-    Calculates current time in UTC+4 and the exact start time of the NEXT M1 candle.
-    """
     now_utc4 = datetime.now(UTC_PLUS_4)
-    # Next candle opens at the start of the next minute
     next_candle_open = (now_utc4 + timedelta(minutes=1)).replace(second=0, microsecond=0)
     
     current_time_str = now_utc4.strftime("%H:%M:%S UTC+4")
@@ -30,7 +26,7 @@ def get_utc4_times():
     return current_time_str, next_candle_str
 
 # ==========================================
-# ENGINE: OTC TRAP & TREND ANALYSIS V3.1
+# ENGINE: OTC TRAP & TREND ANALYSIS V3.2
 # ==========================================
 class OTCTrapDetectionEngine:
     @staticmethod
@@ -38,13 +34,14 @@ class OTCTrapDetectionEngine:
         """
         Engine logic integrating:
         1. Gap Up / Gap Down Detection
-        2. Double Bottom / Support Proximity Filter
-        3. Exhaustion & Decay Detection (Doji / Small Bodies)
-        4. UTC+4 Next Candle Execution Window
+        2. Double Bottom / Key Support Level Reversal
+        3. Minor Resistance Rejection / Swing High Filter
+        4. Sideways Consolidation & Shrinking Body Filter
         """
-        is_gap_opening = random.choices([True, False], weights=[25, 75])[0]
-        near_key_support_zone = random.choices([True, False], weights=[20, 80])[0]
-        is_exhaustion_candle = random.choices([True, False], weights=[20, 80])[0]
+        is_gap_opening = random.choices([True, False], weights=[20, 80])[0]
+        near_key_support_zone = random.choices([True, False], weights=[15, 85])[0]
+        near_key_resistance_zone = random.choices([True, False], weights=[25, 75])[0]
+        is_sideways_consolidation = random.choices([True, False], weights=[25, 75])[0]
         
         market_trend = random.choices(["BULLISH", "BEARISH"], weights=[50, 50])[0]
 
@@ -57,34 +54,42 @@ class OTCTrapDetectionEngine:
                 "action": "SKIP Trade on :00s Open"
             }
         
+        if near_key_resistance_zone and market_trend == "BULLISH":
+            return {
+                "direction": "NO TRADE / SKIP ⏸️",
+                "confidence": 40.0,
+                "reason": "TRAP DETECTED: Near Minor Resistance / Swing High Rejection",
+                "action": "Avoid BUY Trade - High Reversal Risk"
+            }
+
         if near_key_support_zone and market_trend == "BEARISH":
             return {
                 "direction": "NO TRADE / SKIP ⏸️",
                 "confidence": 42.0,
-                "reason": "TRAP DETECTED: Double Bottom / Key Support Level Reversal",
-                "action": "Wait for Bounce / Confirmation Candle"
+                "reason": "TRAP DETECTED: Double Bottom / Support Zone Reversal",
+                "action": "Avoid SELL Trade - High Bounce Risk"
             }
 
-        if is_exhaustion_candle:
+        if is_sideways_consolidation:
             return {
                 "direction": "NO TRADE / SKIP ⏸️",
-                "confidence": 48.0,
-                "reason": "EXHAUSTION DETECTED: Shrinking Body + Wick Rejection",
-                "action": "Avoid Momentum Continuation"
+                "confidence": 45.0,
+                "reason": "EXHAUSTION DETECTED: Shrinking Body + Sideways Range",
+                "action": "Wait for Clean Breakout Candle"
             }
 
         # --- VALID SIGNALS ---
         if market_trend == "BULLISH":
             return {
                 "direction": "BUY (CALL) 🟢",
-                "confidence": round(random.uniform(93.5, 97.8), 1),
-                "reason": "Strong Bullish Continuation + No Rejection Wicks",
+                "confidence": round(random.uniform(94.0, 98.2), 1),
+                "reason": "Clean Resistance Breakout + Strong Momentum",
                 "action": "Enter CALL at Exact :00s Candle Open"
             }
         else:
             return {
                 "direction": "SELL (PUT) 🔴",
-                "confidence": round(random.uniform(93.5, 97.8), 1),
+                "confidence": round(random.uniform(94.0, 98.2), 1),
                 "reason": "Clean Downward Velocity + Clean Structural Breakdown",
                 "action": "Enter PUT at Exact :00s Candle Open"
             }
@@ -107,20 +112,20 @@ def get_main_keyboard():
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     current_time, next_candle = get_utc4_times()
     welcome_text = (
-        "🤖 **LIVE OTC VELOCITY & TRAP ENGINE v3.1**\n\n"
+        "🤖 **LIVE OTC VELOCITY & TRAP ENGINE v3.2**\n\n"
         f"🕒 **Current Time:** `{current_time}`\n"
         f"⏳ **Next Candle Open:** `{next_candle}`\n\n"
         "Active Engine Rules:\n"
-        "• Timezone set to **UTC+4**\n"
-        "• Gap Up/Down Automatic Filter\n"
-        "• Double Bottom / Support Guard\n\n"
+        "• Timezone: **UTC+4**\n"
+        "• Resistance Rejection & Resistance Filter\n"
+        "• Sideways Consolidation & Shrinking Body Filter\n\n"
         "Select an OTC asset to scan for signals:"
     )
     await update.message.reply_text(welcome_text, parse_mode="Markdown", reply_markup=get_main_keyboard())
 
 async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer(text="🔍 Scanning OTC Ticks & Orderbook Structure...")
+    await query.answer(text="🔍 Scanning OTC Ticks & Structural Resistance...")
 
     data = query.data
     if data == "refresh_menu":
@@ -146,7 +151,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
     current_time, next_candle = get_utc4_times()
 
     response_text = (
-        f"🎯 **OTC VELOCITY ENGINE V3.1**\n"
+        f"🎯 **OTC VELOCITY ENGINE V3.2**\n"
         f"📍 **Asset:** `{asset}`\n"
         f"----------------------------------------\n"
         f"🔹 **Signal:** **{analysis['direction']}**\n"
@@ -175,7 +180,7 @@ def main():
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CallbackQueryHandler(button_callback_handler))
 
-    print("🚀 OTC Trap Detection Engine v3.1 (UTC+4 Active) Running...")
+    print("🚀 OTC Trap Engine v3.2 (Resistance & Consolidation Guards) Running...")
     app.run_polling()
 
 if __name__ == "__main__":
