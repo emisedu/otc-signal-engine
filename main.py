@@ -19,7 +19,7 @@ UTC_PLUS_4 = timezone(timedelta(hours=4))
 def get_utc4_next_candle_prediction_time():
     now_utc4 = datetime.now(UTC_PLUS_4)
     
-    # Fast Buffer Shift: If clicked within 10s of candle close, shift to next minute
+    # Fast Buffer Shift: If clicked within 10s of candle close, shift to next-to-next candle
     if now_utc4.second >= 50:
         target_candle_open = (now_utc4 + timedelta(minutes=2)).replace(second=0, microsecond=0)
     else:
@@ -34,9 +34,9 @@ def get_utc4_next_candle_prediction_time():
     return current_time_str, target_open_str, target_close_str
 
 # ==========================================
-# ENGINE: FAST PREDICTION ENGINE V3.6
+# ENGINE: QUOTEX FAST PREDICTION ENGINE V4.0
 # ==========================================
-class OTCFastPredictorEngine:
+class QuotexFastPredictorEngine:
     @staticmethod
     def predict_next_candle(asset_name: str):
         is_gap_opening = random.choices([True, False], weights=[15, 85])[0]
@@ -49,7 +49,7 @@ class OTCFastPredictorEngine:
             return {
                 "direction": "NO TRADE / SKIP ⏸️",
                 "confidence": 0.0,
-                "reason": "TRAP RISK: Potential Gap Opening on Next Candle",
+                "reason": "QUOTEX TRAP: Potential Gap Opening on Next Candle",
                 "action": "Do NOT enter trade on next candle open"
             }
         
@@ -57,7 +57,7 @@ class OTCFastPredictorEngine:
             return {
                 "direction": "NO TRADE / SKIP ⏸️",
                 "confidence": 40.0,
-                "reason": "REJECTION RISK: Resistance Zone Reversal",
+                "reason": "REJECTION RISK: Quotex Resistance Zone Reversal",
                 "action": "Avoid CALL - High Sell Pressure"
             }
 
@@ -65,7 +65,7 @@ class OTCFastPredictorEngine:
             return {
                 "direction": "NO TRADE / SKIP ⏸️",
                 "confidence": 42.0,
-                "reason": "BOUNCE RISK: Key Support Zone",
+                "reason": "BOUNCE RISK: Quotex Key Support Level",
                 "action": "Avoid PUT - High Support Reversal"
             }
 
@@ -73,28 +73,30 @@ class OTCFastPredictorEngine:
             return {
                 "direction": "BUY (CALL) 🟢",
                 "confidence": round(random.uniform(94.5, 98.6), 1),
-                "reason": "Strong Bullish Momentum Continuation",
+                "reason": "Strong Quotex OTC Bullish Momentum",
                 "action": "Place CALL at exact :00s Open Time"
             }
         else:
             return {
                 "direction": "SELL (PUT) 🔴",
                 "confidence": round(random.uniform(94.5, 98.6), 1),
-                "reason": "Strong Bearish Breakdown Velocity",
+                "reason": "Strong Quotex OTC Bearish Velocity",
                 "action": "Place PUT at exact :00s Open Time"
             }
 
 # ==========================================
-# TELEGRAM INTERFACE (ONLY TOP 5 PAIRS)
+# TELEGRAM INTERFACE (QUOTEX PAIRS ONLY)
 # ==========================================
 def get_main_keyboard():
-    # Only 5 selected pairs from screenshot (+92% payout)
+    # Exact 7 pairs from Quotex screenshot
     keyboard = [
-        [InlineKeyboardButton("📊 USD/ARS OTC (+92%)", callback_data="pair_USDARS_OTC")],
-        [InlineKeyboardButton("📊 USD/BRL OTC (+92%)", callback_data="pair_USDBRL_OTC")],
-        [InlineKeyboardButton("📊 USD/CHF OTC (+92%)", callback_data="pair_USDCHF_OTC")],
-        [InlineKeyboardButton("📊 USD/COP OTC (+92%)", callback_data="pair_USDCOP_OTC")],
-        [InlineKeyboardButton("📊 USD/IDR OTC (+92%)", callback_data="pair_USDIDR_OTC")],
+        [InlineKeyboardButton("📊 USD/BRL (OTC) (+94%)", callback_data="pair_USDBRL_OTC")],
+        [InlineKeyboardButton("📊 NZD/JPY (OTC) (+93%)", callback_data="pair_NZDJPY_OTC")],
+        [InlineKeyboardButton("📊 USD/BDT (OTC) (+93%)", callback_data="pair_USDBDT_OTC")],
+        [InlineKeyboardButton("📊 USD/JPY (OTC) (+93%)", callback_data="pair_USDJPY_OTC")],
+        [InlineKeyboardButton("📊 USD/NGN (OTC) (+93%)", callback_data="pair_USDNGN_OTC")],
+        [InlineKeyboardButton("📊 AUD/USD (OTC) (+92%)", callback_data="pair_AUDUSD_OTC")],
+        [InlineKeyboardButton("📊 GBP/JPY (OTC) (+92%)", callback_data="pair_GBPJPY_OTC")],
         [InlineKeyboardButton("🔄 Refresh Dashboard", callback_data="refresh_menu")]
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -102,18 +104,16 @@ def get_main_keyboard():
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     current_time, target_open, target_close = get_utc4_next_candle_prediction_time()
     welcome_text = (
-        "🤖 **INSTANT OTC PREDICTION ENGINE v3.6**\n\n"
+        "🤖 **QUOTEX OTC PREDICTION ENGINE v4.0 (TESTING)**\n\n"
         f"🕒 **Current Time:** `{current_time}`\n"
-        f"🎯 **Target Prediction Candle:** `{target_open}` to `{target_close}`\n\n"
-        "Active Asset List: **Top 5 (+92%) Pairs**\n"
+        f"🎯 **Target Candle:** `{target_open}` to `{target_close}`\n\n"
+        "Selected Platform: **Quotex OTC**\n"
         "Select a pair below for instant signal:"
     )
     await update.message.reply_text(welcome_text, parse_mode="Markdown", reply_markup=get_main_keyboard())
 
 async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    
-    # Instant callback response to stop loading delay
     await query.answer()
 
     data = query.data
@@ -121,10 +121,10 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
 
     if data == "refresh_menu":
         refresh_text = (
-            f"🔄 **PREDICTION DASHBOARD REFRESHED**\n\n"
+            f"🔄 **QUOTEX DASHBOARD REFRESHED**\n\n"
             f"🕒 **Current Time:** `{current_time}`\n"
             f"⏳ **Next Target Candle:** `{target_open}`\n\n"
-            f"Select an asset below:"
+            f"Select a Quotex pair below:"
         )
         try:
             await query.edit_message_text(
@@ -141,19 +141,23 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         return
 
     pair_map = {
-        "pair_USDARS_OTC": "USD/ARS OTC",
-        "pair_USDBRL_OTC": "USD/BRL OTC",
-        "pair_USDCHF_OTC": "USD/CHF OTC",
-        "pair_USDCOP_OTC": "USD/COP OTC",
-        "pair_USDIDR_OTC": "USD/IDR OTC"
+        "pair_USDBRL_OTC": ("USD/BRL (OTC)", "94%"),
+        "pair_NZDJPY_OTC": ("NZD/JPY (OTC)", "93%"),
+        "pair_USDBDT_OTC": ("USD/BDT (OTC)", "93%"),
+        "pair_USDJPY_OTC": ("USD/JPY (OTC)", "93%"),
+        "pair_USDNGN_OTC": ("USD/NGN (OTC)", "93%"),
+        "pair_AUDUSD_OTC": ("AUD/USD (OTC)", "92%"),
+        "pair_GBPJPY_OTC": ("GBP/JPY (OTC)", "92%")
     }
 
-    asset = pair_map.get(data, "UNKNOWN ASSET")
-    analysis = OTCFastPredictorEngine.predict_next_candle(asset)
+    asset_info = pair_map.get(data, ("UNKNOWN ASSET", "0%"))
+    asset, payout = asset_info[0], asset_info[1]
+    
+    analysis = QuotexFastPredictorEngine.predict_next_candle(asset)
 
     response_text = (
-        f"🎯 **FAST OTC PREDICTION ENGINE V3.6**\n"
-        f"📍 **Asset:** `{asset}` (+92% Payout)\n"
+        f"🎯 **QUOTEX OTC ENGINE V4.0**\n"
+        f"📍 **Asset:** `{asset}` (+{payout} Payout)\n"
         f"----------------------------------------\n"
         f"🔹 **Predicted Direction:** **{analysis['direction']}**\n"
         f"🔹 **Confidence:** `{analysis['confidence']}%`\n"
@@ -167,7 +171,6 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         f"🕒 **Signal Generated:** `{current_time}`"
     )
 
-    # Edit existing message instead of sending new message to avoid execution delays
     try:
         await query.edit_message_text(
             response_text,
@@ -190,7 +193,7 @@ def main():
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CallbackQueryHandler(button_callback_handler))
 
-    print("🚀 Ultra-Fast OTC Engine v3.6 (5 Pairs Only) Running...")
+    print("🚀 Quotex OTC Engine v4.0 (7 Testing Pairs) Running...")
     app.run_polling()
 
 if __name__ == "__main__":
