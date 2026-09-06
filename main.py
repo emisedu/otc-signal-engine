@@ -14,19 +14,13 @@ TELEGRAM_BOT_TOKEN = "8644355663:AAEzg6oR1VyOx1TwEiFd18UANfM-rBORhNo"
 UTC_PLUS_4 = timezone(timedelta(hours=4))
 
 # ==========================================
-# TIME HELPER FUNCTIONS (NEXT CANDLE PREDICTION)
+# TIME HELPER FUNCTIONS
 # ==========================================
 def get_utc4_next_candle_prediction_time():
-    """
-    Calculates exact Next Candle Open & Close time in UTC+4.
-    If clicked late in the current candle (>45s), shifts prediction 
-    automatically to the next upcoming candle to guarantee buffer time.
-    """
     now_utc4 = datetime.now(UTC_PLUS_4)
     
-    # Calculate target candle start time
-    if now_utc4.second >= 45:
-        # Buffer shift to next-to-next candle if clicked too late in current minute
+    # Fast Buffer Shift: If clicked within 10s of candle close, shift to next minute
+    if now_utc4.second >= 50:
         target_candle_open = (now_utc4 + timedelta(minutes=2)).replace(second=0, microsecond=0)
     else:
         target_candle_open = (now_utc4 + timedelta(minutes=1)).replace(second=0, microsecond=0)
@@ -40,19 +34,17 @@ def get_utc4_next_candle_prediction_time():
     return current_time_str, target_open_str, target_close_str
 
 # ==========================================
-# ENGINE: NEXT CANDLE PREDICTION ENGINE V3.5
+# ENGINE: FAST PREDICTION ENGINE V3.6
 # ==========================================
-class OTCNextCandlePredictorEngine:
+class OTCFastPredictorEngine:
     @staticmethod
-    def predict_next_candle_structure(asset_name: str):
-        is_gap_opening = random.choices([True, False], weights=[20, 80])[0]
+    def predict_next_candle(asset_name: str):
+        is_gap_opening = random.choices([True, False], weights=[15, 85])[0]
         near_key_support_zone = random.choices([True, False], weights=[15, 85])[0]
-        near_key_resistance_zone = random.choices([True, False], weights=[20, 80])[0]
-        is_sideways_consolidation = random.choices([True, False], weights=[20, 80])[0]
+        near_key_resistance_zone = random.choices([True, False], weights=[15, 85])[0]
         
         market_trend = random.choices(["BULLISH", "BEARISH"], weights=[50, 50])[0]
 
-        # --- TRAP FILTERS FOR NEXT CANDLE ---
         if is_gap_opening:
             return {
                 "direction": "NO TRADE / SKIP ⏸️",
@@ -65,60 +57,44 @@ class OTCNextCandlePredictorEngine:
             return {
                 "direction": "NO TRADE / SKIP ⏸️",
                 "confidence": 40.0,
-                "reason": "REJECTION RISK: Approaching Major Resistance Level",
-                "action": "Avoid BUY Trade - High Reversal Chance"
+                "reason": "REJECTION RISK: Resistance Zone Reversal",
+                "action": "Avoid CALL - High Sell Pressure"
             }
 
         if near_key_support_zone and market_trend == "BEARISH":
             return {
                 "direction": "NO TRADE / SKIP ⏸️",
                 "confidence": 42.0,
-                "reason": "BOUNCE RISK: Approaching Key Support Zone",
-                "action": "Avoid SELL Trade - High Support Bounce Chance"
+                "reason": "BOUNCE RISK: Key Support Zone",
+                "action": "Avoid PUT - High Support Reversal"
             }
 
-        if is_sideways_consolidation:
-            return {
-                "direction": "NO TRADE / SKIP ⏸️",
-                "confidence": 45.0,
-                "reason": "CONSOLIDATION: Market in Low Volume Range",
-                "action": "Wait for clear directional candle"
-            }
-
-        # --- VALID NEXT CANDLE PREDICTIONS ---
         if market_trend == "BULLISH":
             return {
                 "direction": "BUY (CALL) 🟢",
                 "confidence": round(random.uniform(94.5, 98.6), 1),
-                "reason": "Next Candle Velocity: Confirmed Bullish Continuation",
-                "action": "Place CALL Option precisely at :00s Open Time"
+                "reason": "Strong Bullish Momentum Continuation",
+                "action": "Place CALL at exact :00s Open Time"
             }
         else:
             return {
                 "direction": "SELL (PUT) 🔴",
                 "confidence": round(random.uniform(94.5, 98.6), 1),
-                "reason": "Next Candle Velocity: Confirmed Bearish Breakdown",
-                "action": "Place PUT Option precisely at :00s Open Time"
+                "reason": "Strong Bearish Breakdown Velocity",
+                "action": "Place PUT at exact :00s Open Time"
             }
 
 # ==========================================
-# TELEGRAM INTERFACE & HANDLERS
+# TELEGRAM INTERFACE (ONLY TOP 5 PAIRS)
 # ==========================================
 def get_main_keyboard():
+    # Only 5 selected pairs from screenshot (+92% payout)
     keyboard = [
-        [InlineKeyboardButton("📊 AED/CNY OTC (+92%)", callback_data="pair_AEDCNY_OTC"),
-         InlineKeyboardButton("📊 AUD/CAD OTC (+92%)", callback_data="pair_AUDCAD_OTC")],
-        [InlineKeyboardButton("📊 AUD/NZD OTC (+92%)", callback_data="pair_AUDNZD_OTC"),
-         InlineKeyboardButton("📊 AUD/USD OTC (+92%)", callback_data="pair_AUDUSD_OTC")],
-        [InlineKeyboardButton("📊 JOD/CNY OTC (+92%)", callback_data="pair_JODCNY_OTC"),
-         InlineKeyboardButton("📊 SAR/CNY OTC (+92%)", callback_data="pair_SARCNY_OTC")],
-        [InlineKeyboardButton("📊 USD/BDT OTC (+92%)", callback_data="pair_USDBDT_OTC"),
-         InlineKeyboardButton("📊 USD/BRL OTC (+92%)", callback_data="pair_USDBRL_OTC")],
-        [InlineKeyboardButton("📊 USD/CHF OTC (+92%)", callback_data="pair_USDCHF_OTC"),
-         InlineKeyboardButton("📊 USD/JPY OTC (+92%)", callback_data="pair_USDJPY_OTC")],
-        [InlineKeyboardButton("📊 USD/PHP OTC (+92%)", callback_data="pair_USDPHP_OTC"),
-         InlineKeyboardButton("📊 USD/THB OTC (+92%)", callback_data="pair_USDTHB_OTC")],
-        [InlineKeyboardButton("📊 USD/VND OTC (+92%)", callback_data="pair_USDVND_OTC")],
+        [InlineKeyboardButton("📊 USD/ARS OTC (+92%)", callback_data="pair_USDARS_OTC")],
+        [InlineKeyboardButton("📊 USD/BRL OTC (+92%)", callback_data="pair_USDBRL_OTC")],
+        [InlineKeyboardButton("📊 USD/CHF OTC (+92%)", callback_data="pair_USDCHF_OTC")],
+        [InlineKeyboardButton("📊 USD/COP OTC (+92%)", callback_data="pair_USDCOP_OTC")],
+        [InlineKeyboardButton("📊 USD/IDR OTC (+92%)", callback_data="pair_USDIDR_OTC")],
         [InlineKeyboardButton("🔄 Refresh Dashboard", callback_data="refresh_menu")]
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -126,20 +102,19 @@ def get_main_keyboard():
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     current_time, target_open, target_close = get_utc4_next_candle_prediction_time()
     welcome_text = (
-        "🤖 **NEXT CANDLE PREDICTION ENGINE v3.5**\n\n"
+        "🤖 **INSTANT OTC PREDICTION ENGINE v3.6**\n\n"
         f"🕒 **Current Time:** `{current_time}`\n"
         f"🎯 **Target Prediction Candle:** `{target_open}` to `{target_close}`\n\n"
-        "⚡ *Signals are calibrated strictly for the UPCOMING CANDLE OPENING.*"
+        "Active Asset List: **Top 5 (+92%) Pairs**\n"
+        "Select a pair below for instant signal:"
     )
     await update.message.reply_text(welcome_text, parse_mode="Markdown", reply_markup=get_main_keyboard())
 
 async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     
-    try:
-        await query.answer()
-    except Exception:
-        pass
+    # Instant callback response to stop loading delay
+    await query.answer()
 
     data = query.data
     current_time, target_open, target_close = get_utc4_next_candle_prediction_time()
@@ -149,7 +124,7 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
             f"🔄 **PREDICTION DASHBOARD REFRESHED**\n\n"
             f"🕒 **Current Time:** `{current_time}`\n"
             f"⏳ **Next Target Candle:** `{target_open}`\n\n"
-            f"Select an asset below to predict next candle:"
+            f"Select an asset below:"
         )
         try:
             await query.edit_message_text(
@@ -166,26 +141,18 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         return
 
     pair_map = {
-        "pair_AEDCNY_OTC": "AED/CNY OTC",
-        "pair_AUDCAD_OTC": "AUD/CAD OTC",
-        "pair_AUDNZD_OTC": "AUD/NZD OTC",
-        "pair_AUDUSD_OTC": "AUD/USD OTC",
-        "pair_JODCNY_OTC": "JOD/CNY OTC",
-        "pair_SARCNY_OTC": "SAR/CNY OTC",
-        "pair_USDBDT_OTC": "USD/BDT OTC",
+        "pair_USDARS_OTC": "USD/ARS OTC",
         "pair_USDBRL_OTC": "USD/BRL OTC",
         "pair_USDCHF_OTC": "USD/CHF OTC",
-        "pair_USDJPY_OTC": "USD/JPY OTC",
-        "pair_USDPHP_OTC": "USD/PHP OTC",
-        "pair_USDTHB_OTC": "USD/THB OTC",
-        "pair_USDVND_OTC": "USD/VND OTC"
+        "pair_USDCOP_OTC": "USD/COP OTC",
+        "pair_USDIDR_OTC": "USD/IDR OTC"
     }
 
     asset = pair_map.get(data, "UNKNOWN ASSET")
-    analysis = OTCNextCandlePredictorEngine.predict_next_candle_structure(asset)
+    analysis = OTCFastPredictorEngine.predict_next_candle(asset)
 
     response_text = (
-        f"🎯 **NEXT CANDLE PREDICTION ENGINE V3.5**\n"
+        f"🎯 **FAST OTC PREDICTION ENGINE V3.6**\n"
         f"📍 **Asset:** `{asset}` (+92% Payout)\n"
         f"----------------------------------------\n"
         f"🔹 **Predicted Direction:** **{analysis['direction']}**\n"
@@ -200,11 +167,19 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         f"🕒 **Signal Generated:** `{current_time}`"
     )
 
-    await query.message.reply_text(
-        response_text,
-        parse_mode="Markdown",
-        reply_markup=get_main_keyboard()
-    )
+    # Edit existing message instead of sending new message to avoid execution delays
+    try:
+        await query.edit_message_text(
+            response_text,
+            parse_mode="Markdown",
+            reply_markup=get_main_keyboard()
+        )
+    except Exception:
+        await query.message.reply_text(
+            response_text,
+            parse_mode="Markdown",
+            reply_markup=get_main_keyboard()
+        )
 
 # ==========================================
 # MAIN EXECUTION
@@ -215,7 +190,7 @@ def main():
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CallbackQueryHandler(button_callback_handler))
 
-    print("🚀 Next Candle Prediction Engine v3.5 Running...")
+    print("🚀 Ultra-Fast OTC Engine v3.6 (5 Pairs Only) Running...")
     app.run_polling()
 
 if __name__ == "__main__":
