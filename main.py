@@ -17,6 +17,9 @@ UTC_PLUS_4 = timezone(timedelta(hours=4))
 # TIME HELPER FUNCTIONS
 # ==========================================
 def get_utc4_times():
+    """
+    Calculates current time in UTC+4 and the exact start time of the NEXT M1 candle.
+    """
     now_utc4 = datetime.now(UTC_PLUS_4)
     next_candle_open = (now_utc4 + timedelta(minutes=1)).replace(second=0, microsecond=0)
     
@@ -26,7 +29,7 @@ def get_utc4_times():
     return current_time_str, next_candle_str
 
 # ==========================================
-# ENGINE: OTC TRAP & TREND ANALYSIS V3.3
+# ENGINE: OTC TRAP & TREND ANALYSIS V3.4
 # ==========================================
 class OTCTrapDetectionEngine:
     @staticmethod
@@ -113,7 +116,7 @@ def get_main_keyboard():
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     current_time, next_candle = get_utc4_times()
     welcome_text = (
-        "🤖 **LIVE OTC VELOCITY & TRAP ENGINE v3.3**\n\n"
+        "🤖 **LIVE OTC VELOCITY & TRAP ENGINE v3.4**\n\n"
         f"🕒 **Current Time:** `{current_time}`\n"
         f"⏳ **Next Candle Open:** `{next_candle}`\n\n"
         "Active Asset List: **13 Top 92% Payout Pairs**\n"
@@ -123,15 +126,36 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer(text="🔍 Scanning Ticks & Structure...")
+    
+    # Fast answer callback to remove loading state on button
+    try:
+        await query.answer()
+    except Exception:
+        pass
 
     data = query.data
+    current_time, next_candle = get_utc4_times()
+
     if data == "refresh_menu":
-        await query.edit_message_text(
-            "🔄 **OTC SIGNAL DASHBOARD REFRESHED**\nSelect an asset:",
-            parse_mode="Markdown",
-            reply_markup=get_main_keyboard()
+        refresh_text = (
+            f"🔄 **OTC SIGNAL DASHBOARD REFRESHED**\n\n"
+            f"🕒 **Current Time:** `{current_time}`\n"
+            f"⏳ **Next Candle Open:** `{next_candle}`\n\n"
+            f"Select an asset below to analyze:"
         )
+        try:
+            await query.edit_message_text(
+                refresh_text,
+                parse_mode="Markdown",
+                reply_markup=get_main_keyboard()
+            )
+        except Exception:
+            # If text is identical, send new message
+            await query.message.reply_text(
+                refresh_text,
+                parse_mode="Markdown",
+                reply_markup=get_main_keyboard()
+            )
         return
 
     pair_map = {
@@ -152,10 +176,9 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
 
     asset = pair_map.get(data, "UNKNOWN ASSET")
     analysis = OTCTrapDetectionEngine.analyze_market_structure(asset)
-    current_time, next_candle = get_utc4_times()
 
     response_text = (
-        f"🎯 **OTC VELOCITY ENGINE V3.3**\n"
+        f"🎯 **OTC VELOCITY ENGINE V3.4**\n"
         f"📍 **Asset:** `{asset}` (+92% Payout)\n"
         f"----------------------------------------\n"
         f"🔹 **Signal:** **{analysis['direction']}**\n"
@@ -184,7 +207,7 @@ def main():
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CallbackQueryHandler(button_callback_handler))
 
-    print("🚀 OTC Engine v3.3 (13 Updated 92% Payout Pairs) Running...")
+    print("🚀 OTC Engine v3.4 (Fix Refresh & Fast Callbacks) Running...")
     app.run_polling()
 
 if __name__ == "__main__":
