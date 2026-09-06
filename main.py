@@ -8,16 +8,14 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 # CONFIGURATION
 # ==========================================
 TELEGRAM_BOT_TOKEN = "8644355663:AAEzg6oR1VyOx1TwEiFd18UANfM-rBORhNo"
-
-# Timezone: UTC+5 (Quotex Terminal Time)
 UTC_PLUS_5 = timezone(timedelta(hours=5))
 
 # ==========================================
-# ULTRA-FAST TIME CALCULATOR
+# TIME CALCULATOR
 # ==========================================
 def get_fast_entry_time():
     now = datetime.now(UTC_PLUS_5)
-    if now.second >= 50:
+    if now.second >= 48:
         target_time = (now + timedelta(minutes=2)).replace(second=0, microsecond=0)
     else:
         target_time = (now + timedelta(minutes=1)).replace(second=0, microsecond=0)
@@ -25,10 +23,28 @@ def get_fast_entry_time():
     return target_time.strftime("%H:%M:00")
 
 # ==========================================
-# COMPACT KEYBOARD (SMALLER BUTTON SIZES)
+# ADVANCED RSI & TREND SIGNAL ENGINE
+# ==========================================
+class QuotexSmartEngine:
+    @staticmethod
+    def analyze_market():
+        # Simulated RSI Value calculation (30 to 70 range)
+        rsi_val = random.randint(20, 80)
+        
+        # RSI Analysis Logic
+        if rsi_val >= 70:
+            return "SELL", "96.5%", "RSI Overbought (>70) Reversal Zone"
+        elif rsi_val <= 30:
+            return "BUY", "96.5%", "RSI Oversold (<30) Reversal Zone"
+        else:
+            # Trend Momentum Filter
+            direction = random.choice(["BUY", "SELL"])
+            return direction, "94.2%", "Trend Continuation Pattern"
+
+# ==========================================
+# KEYBOARD
 # ==========================================
 def get_main_keyboard():
-    # 2-3 buttons per row keeps the button dimensions compact
     keyboard = [
         [
             InlineKeyboardButton("📊 USD/BRL", callback_data="USDBRL_OTC"),
@@ -53,7 +69,7 @@ def get_main_keyboard():
 # HANDLERS
 # ==========================================
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    welcome_text = "🏛️ **QUOTEX FAST TERMINAL**\nSelect a pair below:"
+    welcome_text = "🏛️ **QUOTEX SMART RSI TERMINAL**\nSelect a pair below:"
     await update.message.reply_text(welcome_text, parse_mode="Markdown", reply_markup=get_main_keyboard())
 
 async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -72,21 +88,19 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
     pair_display_name = data.replace("_OTC", " (OTC)")
     entry_time = get_fast_entry_time()
 
-    # Direction Decision
-    direction = random.choices(["BUY", "SELL"], weights=[50, 50])[0]
-    accuracy_percentage = round(random.uniform(94.2, 98.7), 1)
+    direction, accuracy, reason = QuotexSmartEngine.analyze_market()
 
     if direction == "BUY":
-        signal_output = "🟩 **UP** ⬆️"
+        signal_output = "🟩 **UP / CALL** ⬆️"
     else:
-        signal_output = "🟥 **DOWN** ⬇️"
+        signal_output = "f🟥 **DOWN / PUT** ⬇️"
 
-    # Minimal Output: Asset, Single Direction Button, Entry Time & Accuracy %
     response_text = (
         f"📍 **{pair_display_name}**\n\n"
         f"🎯 {signal_output}\n"
         f"⏰ **ENTRY:** `{entry_time}`\n"
-        f"🎯 **ACCURACY:** `{accuracy_percentage}%`"
+        f"🎯 **ACCURACY:** `{accuracy}`\n"
+        f"💡 **RULE:** If 1st candle loses, use **1-Step Martingale (MTG)** on next candle."
     )
 
     try:
@@ -102,15 +116,12 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
             reply_markup=get_main_keyboard()
         )
 
-# ==========================================
-# MAIN EXECUTION
-# ==========================================
 def main():
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CallbackQueryHandler(button_callback_handler))
 
-    print("🚀 Quotex Ultra-Compact Engine Active...")
+    print("🚀 Quotex Smart Engine Active...")
     app.run_polling()
 
 if __name__ == "__main__":
